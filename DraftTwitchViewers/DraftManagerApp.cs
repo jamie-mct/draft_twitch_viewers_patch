@@ -127,7 +127,7 @@ namespace DraftTwitchViewers
         /// <summary>
         /// The settings save location.
         /// </summary>
-        private string settingsLocation = "GameData/DraftTwitchViewers/";
+        private string settingsLocation { get { return KSPUtil.ApplicationRootPath + "GameData/DraftTwitchViewers/"; } }
         /// <summary>
         /// Has something changed that we need to save?
         /// </summary>
