@@ -10,6 +10,10 @@ namespace DraftTwitchViewers
             Log.Info("(Log): " + text);
         }
 
+        public static void LogInfo(string message) => Log.Info($"[INFO] | {message}");
+        public static void LogWarn(string message) => Log.Warning($"[WARN] | {message}");
+        public static void LogError(string message) => Debug.LogError($"Draft Twitch Viewers : [ERR ] | {message}");
+
         public static void DebugWarning(string text)
         {
             Log.Warning("(Warning): " + text);

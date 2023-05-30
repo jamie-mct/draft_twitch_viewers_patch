@@ -139,7 +139,7 @@ namespace DraftTwitchViewers
         /// Called when a draft succeeds.
         /// </summary>
         /// <param name="kerbalName">The name of the drafted viewer.</param>
-        void DraftSuccess(Dictionary<string, string> info)
+        void DraftSuccess(Draftee info)
         {
             // Resets failures. The addon should only destroy after 5 consecutive failures.
             failures = 0;
@@ -155,11 +155,11 @@ namespace DraftTwitchViewers
             string oldName = replacement.GetValue("kerbalName");
 
             // Replace the old name with the new.
-            replacement.SetValue("kerbalName", info["name"]);
+            replacement.SetValue("kerbalName", info.name);
 
             // Get an old Kerbal and rename it.
             ProtoCrewMember toRename = HighLogic.CurrentGame.CrewRoster[oldName];
-            toRename.ChangeName(info["name"]);
+            toRename.ChangeName(info.name);
 
             // Get a list of PARAM nodes in the contract.
             ConfigNode[] paramNodes = replacement.GetNodes("PARAM");
@@ -174,28 +174,28 @@ namespace DraftTwitchViewers
                 {
                     case "AcquireCrew":
                         {
-                            paramNodes[i].SetValue("title", "Save " + info["name"]);
-                            paramNodes[i].AddValue("kerbal", info["name"]);
+                            paramNodes[i].SetValue("title", "Save " + info.name);
+                            paramNodes[i].AddValue("kerbal", info.name);
                             toMod.RemoveParameter(0);
                             break;
                         }
                     case "AcquirePart":
                         {
-                            string firstName = info["name"].Substring(0, info["name"].IndexOf(' '));
+                            string firstName = info.name.Substring(0, info.name.IndexOf(' '));
                             paramNodes[i].SetValue("title", "Obtain " + firstName + "'s Scrap");
                             toMod.RemoveParameter(0);
                             break;
                         }
                     case "RecoverKerbal":
                         {
-                            paramNodes[i].SetValue("title", "Recover " + info["name"] + " on Kerbin");
-                            paramNodes[i].AddValue("kerbal", info["name"]);
+                            paramNodes[i].SetValue("title", "Recover " + info.name + " on Kerbin");
+                            paramNodes[i].AddValue("kerbal", info.name);
                             toMod.RemoveParameter(0);
                             break;
                         }
                     case "RecoverPart":
                         {
-                            string firstName = info["name"].Substring(0, info["name"].IndexOf(' '));
+                            string firstName = info.name.Substring(0, info.name.IndexOf(' '));
                             paramNodes[i].SetValue("title", "Recover " + firstName + "'s Scrap on Kerbin");
                             toMod.RemoveParameter(0);
                             break;
@@ -210,7 +210,7 @@ namespace DraftTwitchViewers
             Contract.Load(toMod, replacement);
 
             // Logging.
-            Logger.DebugLog("Draft Success (" + contractsToModify.Count.ToString() + " contracts waiting): " + info["name"]);
+            Logger.DebugLog("Draft Success (" + contractsToModify.Count.ToString() + " contracts waiting): " + info.name);
 
             // Refresh the contract list by firing the onContractListChanged event.
             GameEvents.Contract.onContractsListChanged.Fire();

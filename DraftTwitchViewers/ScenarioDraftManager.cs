@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 
 
+
 namespace DraftTwitchViewers
 {
     /// <summary>
@@ -27,16 +28,12 @@ namespace DraftTwitchViewers
         /// <summary>
         /// The settings save location.
         /// </summary>
-        private string settingsLocation = "GameData/DraftTwitchViewers/";
+        private string settingsLocation = "GameData/DraftTwitchViewers/PluginData/";
 
         #endregion
 
         #region Global Settings
 
-        /// <summary>
-        /// The twitch channel.
-        /// </summary>
-        public string channel = "";
         /// <summary>
         /// Add "Kerman" to every name?
         /// </summary>
@@ -79,7 +76,11 @@ namespace DraftTwitchViewers
         /// <summary>
         /// The client ID string used to access the Twitch API.
         /// </summary>
-        private const string clientID = "02czsg7qp3bh79dpgrpkgb1irngxma";
+        public const string clientID = "xmw33t0onn6f262v9qv1m7iwpa8ouk";
+
+        private string streamerAccessToken;
+        private string streamerUserId;
+        public bool AuthNeeded = true;
 
         #endregion
 
@@ -93,14 +94,20 @@ namespace DraftTwitchViewers
             get { return addKerman; }
             set { if (addKerman != value) { addKerman = value; SaveGlobalSettings(); } }
         }
-
         /// <summary>
-        /// Channel property. Triggers autosave (after delay) when changed.
+        /// streamerAccessToken property. Triggers autosave (after delay) when changed.
         /// </summary>
-        public string Channel
+        public string StreamerAccessToken
         {
-            get { return channel; }
-            set { if (channel != value) { channel = value; needSave = true; currentSaveDelay = 0f; } }
+            get { return streamerAccessToken; }
+            set { if (streamerAccessToken != value) { streamerAccessToken = value; needSave = true; currentSaveDelay = 2f; } }
+        }
+
+        // streamerUserId
+        public string StreamerUserId
+        {
+            get { return streamerUserId; }
+            set { if (streamerUserId != value) { streamerUserId = value; needSave = true; currentSaveDelay = 2f; } }
         }
 
         #endregion
@@ -140,7 +147,10 @@ namespace DraftTwitchViewers
                     if (draftSettings != null)
                     {
                         // Get the global settings.
-                        if (draftSettings.HasValue("channel")) { channel = draftSettings.GetValue("channel"); }
+                        if (draftSettings.HasValue("streamerAccessToken")) { streamerAccessToken = draftSettings.GetValue("streamerAccessToken"); }
+                        if (draftSettings.HasValue("streamerUserId")) { streamerUserId = draftSettings.GetValue("streamerUserId"); }
+                        AuthNeeded = (streamerAccessToken == null || streamerUserId ==null|| streamerAccessToken == "" || streamerUserId == "");
+
                         if (draftSettings.HasValue("addKerman")) { try { addKerman = bool.Parse(draftSettings.GetValue("addKerman")); } catch { } }
                     }
                     // If the DRAFT node doesn't exist,
@@ -451,269 +461,279 @@ namespace DraftTwitchViewers
         /// <param name="suppressSave">If true, the drafted user will not be saved.</param>
         /// <param name="job">The job for the Kerbal. Optional and defaults to "Any" and is not needed if forDrawing is true.</param>
         /// <returns>The IEnumerator (used for making the draft asynchronously).</returns>
-        public static IEnumerator DraftKerbal(Action<Dictionary<string, string>> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")
+        //public static IEnumerator DraftKerbal(Action<Dictionary<string, string>> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")
+        public static IEnumerator DraftKerbal(Action<Draftee> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")
         {
+#if true
             if (pausedForFailure)
                 yield return null;
             // If a channel hasn't been input yet,
-            if (string.IsNullOrEmpty(Instance.channel))
+            if (string.IsNullOrEmpty(Instance.StreamerAccessToken))
             {
                 // Invoke failure.
-                failure.Invoke("Please specify a channel!");
+                failure.Invoke("Please Authenticate with Twitch!");
             }
             // Else, continue.
             else
             {
                 Log.Info("ScenarioDraftManager.DraftKerbal");
-                // Creates a new Unity web request (WWW) using the provided channel.
-                WWW getList = new WWW("http://tmi.twitch.tv/group/user/" + Instance.channel + "/chatters?client_id=" + clientID);
-                Log.Info("WWW request 1: " + "http://tmi.twitch.tv/group/user/" + Instance.channel + "/chatters?client_id=" + clientID);
-                // Waits for the web request to finish.
-                yield return getList;
 
-                // Check for errors.
-                if (string.IsNullOrEmpty(getList.error))
-                {
-                    Log.Info("getList.text: " + getList.text);
-                    // Parse the result into a list of users, still lowercased.
-                    List<string> usersInChat = new List<string>();
-                    usersInChat.AddRange(Instance.ParseIntoNameArray(getList.text, "moderators"));
-                    usersInChat.AddRange(Instance.ParseIntoNameArray(getList.text, "staff"));
-                    usersInChat.AddRange(Instance.ParseIntoNameArray(getList.text, "admins"));
-                    usersInChat.AddRange(Instance.ParseIntoNameArray(getList.text, "global_mods"));
-                    usersInChat.AddRange(Instance.ParseIntoNameArray(getList.text, "viewers"));
-
-                    foreach (var s in usersInChat)
+                DraftManagerApp.instance.GetAllViewers(
+                    new Action<PaginatedArray<Chatter>>((PaginatedArray<Chatter> chatters) =>
                     {
-                        Log.Info("usersInChat: " + s);
-                    }
-                    // Remove any bots present.
-                    if (Instance.BotsToRemove != null)
-                    {
-                        foreach (string bot in Instance.BotsToRemove)
+                        ////////////////////////
                         {
-                            Log.Info("Removing bot: " + bot);
-                            usersInChat.Remove(bot);
-                        }
-                    }
-                    // If it's for a drawing, remove drawn users. If it's for drafting, remove drafted users.
-                    if (forDrawing)
-                    {
-                        // Remove any users who were already drafted.
-                        if (Instance.DrawnUsers != null)
-                        {
-                            foreach (string drawn in Instance.DrawnUsers)
+                            //Log.Info("getList.text: " + viewer.DisplayName);
+                            // Parse the result into a list of users, still lowercased.
+                            List<string> usersInChat = new List<string>();
+                            if (chatters == null)
                             {
-                                usersInChat.Remove(drawn);
+                                Log.Info("viewer is null");
                             }
-                        }
-                    }
-                    else
-                    {
-                        // Remove any users who were already drafted.
-                        if (Instance.AlreadyDrafted != null)
-                        {
-                            foreach (string drafted in Instance.AlreadyDrafted)
-                            {
-                                Log.Info("Removing drafted: " + drafted);
-                                usersInChat.Remove(drafted);
-                            }
-                        }
 
-                        // LGG: added check to be sure that the same user isn't a kerbal already
-                        if (HighLogic.CurrentGame != null)
-                        {
-                            for (int i = usersInChat.Count - 1; i >= 0; i--)
-                            {
-                                var s = RealUserName(usersInChat[i]).ToLower();
+                            usersInChat.AddRange(Instance.ParseIntoNameArray(chatters));
 
-                                for (int i1 = 0; i1 < HighLogic.CurrentGame.CrewRoster.Count; i1++)
+                            // Remove any bots present.
+                            if (Instance.BotsToRemove != null)
+                            {
+                                foreach (string bot in Instance.BotsToRemove)
                                 {
-                                    if (HighLogic.CurrentGame.CrewRoster[i1].name.ToLower() == s)
+                                    Log.Info("Removing bot: " + bot);
+                                    //usersInChat.Remove(bot);
+                                    usersInChat.RemoveAll(n => n.Equals(bot, StringComparison.OrdinalIgnoreCase));
+                                }
+                            }
+                            Log.Info("ScenarioDraftManager.DraftKerbal-KerbalDrafted 2");
+
+                            // If it's for a drawing, remove drawn users. If it's for drafting, remove drafted users.
+                            if (forDrawing)
+                            {
+                                // Remove any users who were already drafted.
+                                if (Instance.DrawnUsers != null)
+                                {
+                                    foreach (string drawn in Instance.DrawnUsers)
                                     {
-                                        usersInChat.Remove(usersInChat[i]);
-                                        break;
+                                        usersInChat.Remove(drawn);
                                     }
                                 }
                             }
-                        }
-
-                        // Create a new list which will be used to remove from the user list.
-                        List<string> toRemove = new List<string>();
-
-                        // Iterate through the regexes.
-                        if (Instance.regexes != null)
-                        {
-                            foreach (Regex r in Instance.regexes)
+                            else
                             {
-                                // Iterate through each username per regex.
-                                foreach (string u in usersInChat)
+
+                                // Remove any users who were already drafted.
+                                if (Instance.AlreadyDrafted != null)
                                 {
-                                    // If the current regex matches the current username,
-                                    if (r.IsMatch(u))
+                                    foreach (string drafted in Instance.AlreadyDrafted)
                                     {
-                                        // Mark the name for removal by adding it to the removal list.
-                                        toRemove.Add(u);
+                                        Log.Info("Removing drafted: " + drafted);
+                                        usersInChat.Remove(drafted);
                                     }
                                 }
+
+                                // LGG: added check to be sure that the same user isn't a kerbal already
+                                if (HighLogic.CurrentGame != null)
+                                {
+                                    for (int i = usersInChat.Count - 1; i >= 0; i--)
+                                    {
+                                        var s = RealUserName(usersInChat[i]).ToLower();
+
+                                        for (int i1 = 0; i1 < HighLogic.CurrentGame.CrewRoster.Count; i1++)
+                                        {
+                                            if (HighLogic.CurrentGame.CrewRoster[i1].name.ToLower() == s)
+                                            {
+                                                usersInChat.Remove(usersInChat[i]);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Create a new list which will be used to remove from the user list.
+                                List<string> toRemove = new List<string>();
+
+                                // Iterate through the regexes.
+                                if (Instance.regexes != null)
+                                {
+                                    foreach (Regex r in Instance.regexes)
+                                    {
+                                        // Iterate through each username per regex.
+                                        foreach (string u in usersInChat)
+                                        {
+                                            // If the current regex matches the current username,
+                                            if (r.IsMatch(u))
+                                            {
+                                                // Mark the name for removal by adding it to the removal list.
+                                                toRemove.Add(u);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Iterate through the removal list and remove each entry from the user list.
+                                foreach (string r in toRemove)
+                                {
+                                    usersInChat.Remove(r);
+                                }
                             }
-                        }
-
-                        // Iterate through the removal list and remove each entry from the user list.
-                        foreach (string r in toRemove)
-                        {
-                            usersInChat.Remove(r);
-                        }
-                    }
-                    // If for drawing, perform drawing code.
-                    if (forDrawing)
-                    {
-                        // If the user list is empty,
-                        if (usersInChat.Count == 0)
-                        {
-                            // Invoke the failure Action, allowing the caller to handle this error.
-                            failure.Invoke("Can't draw! No more valid users.\nEmpty the drafted user list to draft unused viewers.");
-                        }
-                        else
-                        {
-
-                            // Gets a random user from the list.
-                            bool foundProperKerbal = false;
-                            bool failedToFindOne = false;
-                            int searchAttempts = 0;
-
-                            // Set up Kerbal data variables.
-                            string oddUsername = null;
-                            string realUsername = null;
-                            string realJob = job;
-
-                            do
+                            // If for drawing, perform drawing code.
+                            if (forDrawing)
                             {
-                                // Incremet attempts.
-                                searchAttempts++;
-
                                 // If the user list is empty,
                                 if (usersInChat.Count == 0)
                                 {
-                                    // No viewers left.
-                                    failedToFindOne = true;
+                                    // Invoke the failure Action, allowing the caller to handle this error.
+                                    failure.Invoke("Can't draw! No more valid users.\nEmpty the drafted user list to draft unused viewers.");
                                 }
                                 else
                                 {
-                                    string userDrawn = usersInChat[UnityEngine.Random.Range(0, usersInChat.Count)];
-                                    oddUsername = userDrawn;
 
-                                    realUsername = UppercaseFirst(userDrawn);
-                                    Log.Info("realUsername: " + realUsername);
-                                    foundProperKerbal = true;
+                                    // Gets a random user from the list.
+                                    bool foundProperKerbal = false;
+                                    bool failedToFindOne = false;
+                                    int searchAttempts = 0;
 
+                                    // Set up Kerbal data variables.
+                                    string oddUsername = null;
+                                    string realUsername = null;
+                                    string realJob = job;
+
+                                    do
+                                    {
+                                        // Incremet attempts.
+                                        searchAttempts++;
+
+                                        // If the user list is empty,
+                                        if (usersInChat.Count == 0)
+                                        {
+                                            // No viewers left.
+                                            failedToFindOne = true;
+                                        }
+                                        else
+                                        {
+                                            string userDrawn = usersInChat[UnityEngine.Random.Range(0, usersInChat.Count)];
+                                            oddUsername = userDrawn;
+
+                                            realUsername = UppercaseFirst(userDrawn);
+                                            Log.Info("realUsername: " + realUsername);
+                                            foundProperKerbal = true;
+
+                                            // If the save is not supressed,
+                                            if (!suppressSave)
+                                            {
+                                                // Save the new user in the drawing file.
+                                                Instance.DrawnUsers.Add(userDrawn);
+                                                Instance.SaveDrawn();
+                                            }
+
+                                            Draftee winner = new Draftee(realUsername, "winner");
+                                            //Dictionary<string, string> winner = new Dictionary<string, string>();
+                                            //winner.Add("winner", realUsername);
+
+                                            // Invoke the success Action, allowing the caller to continue.
+                                            success.Invoke(winner);
+                                        }
+                                    }
+                                    while (!foundProperKerbal && !failedToFindOne && searchAttempts < 25);
+                                }
+                            }
+                            // Else, perform draft code.
+                            else
+                            {
+                                // Set up variables used to exit the search loop.
+                                bool foundProperKerbal = false;
+                                bool failedToFindOne = false;
+                                int searchAttempts = 0;
+
+                                // Set up Kerbal data variables.
+                                string oddUsername = null;
+                                string realUsername = null;
+                                string realJob = job;
+
+                                // Randomize the job if none was specified.
+                                if (realJob == "Any")
+                                {
+                                    int randomJob = UnityEngine.Random.Range(0, 3);
+                                    realJob = (randomJob == 0 ? "Pilot" : (randomJob == 1 ? "Engineer" : "Scientist"));
+                                }
+
+                                // Perform the search loop at least once, and repeat until success or failure.
+                                do
+                                {
+                                    // Incremet attempts.
+                                    searchAttempts++;
+
+                                    // If the user list is empty,
+                                    if (usersInChat.Count == 0)
+                                    {
+                                        // No viewers left.
+                                        failedToFindOne = true;
+                                    }
+                                    // Otherwise, continue attempting to draft.
+                                    else
+                                    {
+                                        // Gets a random user from the list.
+                                        string userDrafted = usersInChat[UnityEngine.Random.Range(0, usersInChat.Count)];
+
+                                        oddUsername = userDrafted;
+                                        realUsername = UppercaseFirst(userDrafted);
+                                        foundProperKerbal = true;
+                                    }
+                                }
+                                while (!foundProperKerbal && !failedToFindOne && searchAttempts < 25);
+
+                                // If we found a Kerbal with the right job,
+                                if (foundProperKerbal)
+                                {
                                     // If the save is not supressed,
                                     if (!suppressSave)
                                     {
                                         // Save the new user in the drawing file.
-                                        Instance.DrawnUsers.Add(userDrawn);
-                                        Instance.SaveDrawn();
+                                        Instance.AlreadyDrafted.Add(oddUsername);
                                     }
 
-                                    Dictionary<string, string> winner = new Dictionary<string, string>();
-                                    winner.Add("winner", realUsername);
+                                    //Dictionary<string, string> drafted = new Dictionary<string, string>();
+
+                                    //drafted.Add("name", RealUserName(realUsername));
+                                    //drafted.Add("job", realJob);
+                                    Draftee drafted = new Draftee(realUsername, realJob);
 
                                     // Invoke the success Action, allowing the caller to continue.
-                                    success.Invoke(winner);
+                                    success.Invoke(drafted);
+                                }
+                                // Else, if we failed to find one,
+                                else if (failedToFindOne)
+                                {
+                                    // Invoke the failure Action, allowing the caller to handle this error.
+                                    failure.Invoke("Can't draft! No more valid users.");
+                                }
+                                // Else, if the search was attempted too many times,
+                                else if (searchAttempts >= 25)
+                                {
+                                    // Invoke the failure Action, allowing the caller to handle this error.
+                                    failure.Invoke("Can't draft! Too many attempts.");
                                 }
                             }
-                            while (!foundProperKerbal && !failedToFindOne && searchAttempts < 25);
+
                         }
+                        /////////////////
                     }
-                    // Else, perform draft code.
-                    else
+                    ),
+                    new Action<string>((errorText) =>
                     {
-                        // Set up variables used to exit the search loop.
-                        bool foundProperKerbal = false;
-                        bool failedToFindOne = false;
-                        int searchAttempts = 0;
-
-                        // Set up Kerbal data variables.
-                        string oddUsername = null;
-                        string realUsername = null;
-                        string realJob = job;
-
-                        // Randomize the job if none was specified.
-                        if (realJob == "Any")
-                        {
-                            int randomJob = UnityEngine.Random.Range(0, 3);
-                            realJob = (randomJob == 0 ? "Pilot" : (randomJob == 1 ? "Engineer" : "Scientist"));
-                        }
-
-                        // Perform the search loop at least once, and repeat until success or failure.
-                        do
-                        {
-                            // Incremet attempts.
-                            searchAttempts++;
-
-                            // If the user list is empty,
-                            if (usersInChat.Count == 0)
-                            {
-                                // No viewers left.
-                                failedToFindOne = true;
-                            }
-                            // Otherwise, continue attempting to draft.
-                            else
-                            {
-                                // Gets a random user from the list.
-                                string userDrafted = usersInChat[UnityEngine.Random.Range(0, usersInChat.Count)];
-
-                                oddUsername = userDrafted;
-                                realUsername = UppercaseFirst(userDrafted);
-                                Log.Info("realUsername: " + realUsername);
-                                foundProperKerbal = true;
-                            }
-                        }
-                        while (!foundProperKerbal && !failedToFindOne && searchAttempts < 25);
-
-                        // If we found a Kerbal with the right job,
-                        if (foundProperKerbal)
-                        {
-                            // If the save is not supressed,
-                            if (!suppressSave)
-                            {
-                                // Save the new user in the drawing file.
-                                Instance.AlreadyDrafted.Add(oddUsername);
-                            }
-
-                            Dictionary<string, string> drafted = new Dictionary<string, string>();
-
-                            drafted.Add("name", RealUserName(realUsername));
-                            drafted.Add("job", realJob);
-
-                            Log.Info("Adding drafted user: " + realUsername);
-                            // Invoke the success Action, allowing the caller to continue.
-                            success.Invoke(drafted);
-                        }
-                        // Else, if we failed to find one,
-                        else if (failedToFindOne)
-                        {
-                            // Invoke the failure Action, allowing the caller to handle this error.
-                            failure.Invoke("Can't draft! No more valid users.");
-                        }
-                        // Else, if the search was attempted too many times,
-                        else if (searchAttempts >= 25)
-                        {
-                            // Invoke the failure Action, allowing the caller to handle this error.
-                            failure.Invoke("Can't draft! Too many attempts.");
-                        }
+                        failure.Invoke(errorText);
+                    }),
+                    (Chatter viewer) =>
+                    {
+                        // Log.Error("Web error 1: " + getList.error);
+                        // failure.Invoke("Web error: " + getList.error);
+                        return true;
                     }
+                );
 
-                }
-                // If there is an error,
-                else
-                {
-                    // Invoke failure, stating web error.
-                    Log.Error("Web error 1: " + getList.error);
-                    failure.Invoke("Web error: " + getList.error);
-                }
             }
+#endif
         }
+
 
         #endregion
 
@@ -740,7 +760,11 @@ namespace DraftTwitchViewers
                 }
 
                 // Write the Channel and AddKerman values to it.
-                if (draftSettings.HasValue("channel")) { draftSettings.SetValue("channel", channel); } else { draftSettings.AddValue("channel", channel); }
+                if (draftSettings.HasValue("streamerAccessToken")) { draftSettings.SetValue("streamerAccessToken", streamerAccessToken); } else { draftSettings.AddValue("streamerAccessToken", streamerAccessToken); }
+
+                if (draftSettings.HasValue("streamerUserId")) { draftSettings.SetValue("streamerUserId", streamerUserId); } else { draftSettings.AddValue("streamerUserId", streamerUserId); }
+
+
                 if (draftSettings.HasValue("addKerman")) { draftSettings.SetValue("addKerman", addKerman.ToString()); } else { draftSettings.AddValue("addKerman", addKerman.ToString()); }
 
                 // Get the list of bots to remove.
@@ -779,7 +803,8 @@ namespace DraftTwitchViewers
                 // Create a new DRAFT node to write the general settings to.
                 ConfigNode draftSettings = root.AddNode("DRAFT");
 
-                draftSettings.AddValue("channel", channel);
+                draftSettings.AddValue("streamerAccessToken", streamerAccessToken);
+                draftSettings.AddValue("streamerUserId", streamerUserId);
                 draftSettings.AddValue("addKerman", addKerman.ToString());
 
                 // Create a new BOTS node to write to.
@@ -881,44 +906,27 @@ namespace DraftTwitchViewers
 
         #endregion
 
-        #region Misc Functions
+#region Misc Functions
 
-        /// <summary>
-        /// Converts a twitch chatter request into a list of users.
-        /// </summary>
-        /// <param name="toParse">The request to parse.</param>
-        /// <param name="parsingFrom">The section of the request to parse.</param>
-        /// <returns>A list of users.</returns>
-        string[] ParseIntoNameArray(string toParse, string parsingFrom)
+        string[] ParseIntoNameArray(PaginatedArray<Chatter> chatters)
         {
-            //var s = toParse.IndexOf("\"" + parsingFrom + "\": [");
-            string toSplit = toParse.Substring(toParse.IndexOf("\"" + parsingFrom + "\":["));
-            toSplit = toSplit.Substring(toSplit.IndexOf('[') + 1);
-            toSplit = toSplit.Substring(0, toSplit.IndexOf(']'));
-            if (toSplit == "")
+            string[] toRet = new string[chatters.Data.Count];
+            int i = 0;
+            foreach (var chatter in chatters.Data)
             {
-                return new string[] { };
-            }
-            toSplit = toSplit.Replace(" ", "");
-            toSplit = toSplit.Replace("\n", "");
-            string[] toRet = toSplit.Split(',');
-
-            for (int i = 0; i < toRet.Length; i++)
-            {
-                toRet[i] = toRet[i].Substring(1, toRet[i].Length - 2);
+                toRet[i++] = chatter.DisplayName;
             }
             return toRet;
-
         }
 
-            #endregion
+#endregion
 
-            #region Regexes
+        #region Regexes
 
-            /// <summary>
-            /// A list of regex strings.
-            /// </summary>
-            string[] regexStrings = new string[] {
+        /// <summary>
+        /// A list of regex strings.
+        /// </summary>
+        string[] regexStrings = new string[] {
 
             "(?<!c)(?:a|4)n(?:a|4)(?:l|i|1)",
             "(?:a|4)nu(?:s|5)",
@@ -1010,6 +1018,6 @@ namespace DraftTwitchViewers
             regexes = rList.ToArray();
         }
 
-#endregion
+        #endregion
     }
 }

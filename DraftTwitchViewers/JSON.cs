@@ -5,9 +5,12 @@ using System.Text;
 
 namespace DraftTwitchViewers
 {
+
     /// <summary>
     /// This class encodes and decodes JSON strings.
     /// Spec. details, see http://www.json.org/
+    ///
+    /// This apparently came from this post:  https://stackoverflow.com/questions/401756/parsing-json-using-json-net
     ///
     /// JSON uses Arrays and Objects. These correspond here to the datatypes ArrayList and Hashtable.
     /// All numbers are parsed to doubles.
@@ -28,6 +31,44 @@ namespace DraftTwitchViewers
         public const int TOKEN_NULL = 11;
 
         private const int BUILDER_CAPACITY = 2000;
+        //////////////////////////
+        ///
+
+         public static Hashtable DumpJSONData( string json)
+        {
+            //parse and show entire json in key-value pair
+            Hashtable HTList = (Hashtable)JSON.JsonDecode(json);
+            GetData(HTList);
+            return HTList;
+        }
+
+
+        public static void GetData(Hashtable HT)
+        {
+            IDictionaryEnumerator ienum = HT.GetEnumerator();
+            while (ienum.MoveNext())
+            {
+                if (ienum.Value is ArrayList)
+                {
+                    Logger.LogInfo("data (arraylist) found");
+                    ArrayList arnew = (ArrayList)ienum.Value;
+                    foreach (object obj in arnew)
+                    {
+                        Hashtable hstemp = (Hashtable)obj;
+                        GetData(hstemp);
+                    }
+                }
+                //else
+                //{
+                //    Logger.LogInfo(ienum.Key + "=" + ienum.Value);
+                //}
+            }
+        }
+        ////////////////////////////
+
+
+
+
 
         /// <summary>
         /// Parses the string json into a value

@@ -4,6 +4,7 @@ using KSP.UI.Screens;
 
 using ClickThroughFix;
 using ToolbarControl_NS;
+using System;
 
 namespace DraftTwitchViewers
 {
@@ -18,7 +19,7 @@ namespace DraftTwitchViewers
         /// <summary>
         /// The instance of this object.
         /// </summary>
-        private static DraftManagerApp instance;
+        internal static DraftManagerApp instance;
 
         #region UI Management
 
@@ -271,22 +272,6 @@ namespace DraftTwitchViewers
                 // Log a warning that it wasn't found.
                 Logger.DebugWarning("GlobalSettings.cfg wasn't found. Using defaults.");
             }
-#if false
-            // Create the App Launcher button and add it.
-            draftManagerButton = ApplicationLauncher.Instance.AddModApplication(
-                       DisplayApp,
-                       HideApp,
-                       HoverApp,
-                       UnhoverApp,
-                       DummyVoid,
-                       Disable,
-                       ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT,
-                       GameDatabase.Instance.GetTexture("DraftTwitchViewers/Textures/Toolbar", false));
-
-            // This app should be mutually exclusive. (It should disappear when the player clicks on another app.
-            ApplicationLauncher.Instance.EnableMutuallyExclusive(draftManagerButton);
-#endif
-            
 
             toolbarControl = gameObject.AddComponent<ToolbarControl>();
             toolbarControl.AddToAllToolbars(DisplayApp,
@@ -317,6 +302,8 @@ namespace DraftTwitchViewers
             Logger.DebugLog("DTV App Created.");
         }
 
+            GameObject myplayer = new GameObject();
+
         /// <summary>
         /// Called when the MonoBehaviour is started.
         /// </summary>
@@ -324,7 +311,141 @@ namespace DraftTwitchViewers
         {
             GameEvents.onShowUI.Add(OnShowUI);
             GameEvents.onHideUI.Add(OnHideUI);
+
+
+            myplayer.AddComponent<TextTyper>();
+            StatusTextTyper = myplayer.GetComponent<TextTyper>();
+            AppOnStreamerAuthenticated = new Action<string>(OnStreamerAuthenticated);
+            myplayer.AddComponent<AuthServerManager>();
+
+            authServerManager = myplayer.GetComponent<AuthServerManager>();
+
         }
+        bool authWinVisible = true;
+        void AuthWinWindow(int id)
+        {
+            using (new GUILayout.VerticalScope())
+            {
+
+                GUILayout.FlexibleSpace();
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Click to Authorize with Twitch", GUILayout.Height(40), GUILayout.Width(240)))
+                    {
+                        AuthorizeStreamer();
+                        authWinVisible = false;
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+                GUILayout.FlexibleSpace();
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label("This will only need to be done one time");
+                    GUILayout.FlexibleSpace();
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.FlexibleSpace();
+            }
+        }
+
+        public AuthServerManager authServerManager;
+        //private string streamerUserId;
+        public Action<string> AppOnStreamerAuthenticated;
+
+        string streamerDisplayName;
+        public TextTyper StatusTextTyper;
+
+        public void OnStreamerAuthenticated(string displayName)
+        {
+            streamerDisplayName = displayName;
+            StatusTextTyper.FullText = $"Ready to draft from: {streamerDisplayName}";
+            ScenarioDraftManager.Instance.AuthNeeded = false;
+        }
+
+        private void AuthorizeStreamer()
+        {
+            string csrfPreventionToken = Guid.NewGuid().ToString();
+            if (authServerManager == null)
+            {
+                authServerManager = myplayer.GetComponent<AuthServerManager>();
+                if (authServerManager == null)
+                {
+                    Logger.LogError("Unable to get the AuthServerManager component");
+                    return;
+                }
+            }
+            authServerManager.StartAuthRedirectServer(csrfPreventionToken, new Action<string>((string accessToken) =>
+                {
+                    ScenarioDraftManager.Instance.StreamerAccessToken = accessToken;
+                    AuthenticateStreamer();
+                }));
+            Application.OpenURL($"https://id.twitch.tv/oauth2/authorize?client_id={ScenarioDraftManager.clientID}&redirect_uri=http://localhost:2551/authorize&response_type=token&scope=moderator:read:chatters&state={csrfPreventionToken}");
+        }
+
+        private void AuthenticateStreamer()
+        {
+            if (ScenarioDraftManager.Instance.StreamerAccessToken == "")
+            {
+                ScenarioDraftManager.Instance.AuthNeeded = true;
+
+                return;
+            }
+
+            // Web requests are an async process, and coroutines don't like giving back data, so Action callbacks must be used.
+            StartCoroutine(
+            User.GetFirstUser(
+                     ScenarioDraftManager.Instance.StreamerAccessToken,
+                    User.QueryBy.AccessToken,
+                    new Action<User>((User user) =>
+                    {
+                        //Logger.LogInfo($"User {user.DisplayName} authenticated.");
+                        ScenarioDraftManager.Instance.StreamerUserId = user.Id;
+                        AppOnStreamerAuthenticated.Invoke(user.DisplayName);
+                    }), new Action<Error>((Error err) =>
+                    {
+                        Logger.LogError($"Failed to authenticate with status {err.Status}: {err.ErrorText} - {err.Message}\nClearing config user data.");
+                        /* Config. */
+                        ScenarioDraftManager.Instance.StreamerAccessToken = "";
+                        //FileManager.SaveDraftConfig(Config);
+                    })
+                )
+            );
+        }
+
+        public void GetAllViewers(Action<PaginatedArray<Chatter>> onViewerDrafted, Action<string> onError, Predicate<Chatter> canUseViewer = null)
+        {
+            if (ScenarioDraftManager.Instance.StreamerUserId == "")
+            {
+                return;
+            }
+
+            // Web requests are an async process, and coroutines don't like giving back data, so Action callbacks must be used.
+            StartCoroutine(
+                Chatter.GetAllChatters(
+                    ScenarioDraftManager.Instance.StreamerUserId,
+                    ScenarioDraftManager.Instance.StreamerAccessToken,
+                    new Action<PaginatedArray<Chatter>>((PaginatedArray<Chatter> chatters) =>
+                    {
+                        Logger.LogInfo($"{chatters.Data.Count} pulled.");
+
+                        if (chatters.Data.Count == 0)
+                        {
+                            Logger.LogWarn($"Failed to pick viewer. Empty chat.");
+                            onError.Invoke("Something went wrong!\n\nLooks like no one is in your chat.");
+                            return;
+                        }
+                        onViewerDrafted.Invoke(chatters);
+                    }), new Action<Error>((Error err) =>
+                    {
+                        Logger.LogError($"Failed to pick viewer with status {err.Status}: {err.ErrorText} - {err.Message}");
+                        onError.Invoke("Something went wrong!\n\nCouldn't get your chatters from Twitch.");
+                    })
+                )
+            );
+        }
+
 
         /// <summary>
         /// Called when Unity updates.
@@ -333,9 +454,6 @@ namespace DraftTwitchViewers
         {
             if (UseHotkey && (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt)) && Input.GetKeyUp(KeyCode.Insert))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(false);
             }
@@ -359,20 +477,17 @@ namespace DraftTwitchViewers
             GameEvents.onHideUI.Remove(OnHideUI);
         }
 
-#endregion
+        #endregion
 
-#region App Functions
+        #region App Functions
 
         void DoRightClick()
         {
-            // Lowercase the channel.
-            ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
             // Perform the draft.
             DoDraft(false);
         }
 
-      
+
         /// <summary>
         /// Displays the app when the player clicks.
         /// </summary>
@@ -417,14 +532,18 @@ namespace DraftTwitchViewers
         /// <summary>
         /// Repositions the app.
         /// </summary>
-        private void Reposition()
+        private void Reposition(bool authWin = false)
         {
             //// Gets the button's anchor in 3D space.
             //float anchor = draftManagerButton.GetAnchor().x;
 
             //// Adjusts the window bounds.
             //windowRect = new Rect(Mathf.Min(anchor + 1210.5f - (windowWidth * (isCustomizing ? 2 : 1)), Screen.width - (windowWidth * (isCustomizing ? 2 : 1))), 40f, (windowWidth * (isCustomizing ? 2 : 1)), windowHeight);
-
+            if (authWin)
+            {
+                windowRect = new Rect((Screen.width - windowWidth) / 2, (Screen.height - windowHeight) / 2, windowWidth, windowHeight);
+                return;
+            }
             // If the current scene is flight,
             if (HighLogic.LoadedSceneIsFlight)
             {
@@ -449,10 +568,6 @@ namespace DraftTwitchViewers
                 toolbarControl.OnDestroy();
                 Destroy(toolbarControl);
 
-#if false
-                GameEvents.onGameSceneLoadRequested.Remove(DestroyApp);
-                ApplicationLauncher.Instance.RemoveModApplication(draftManagerButton);
-#endif
                 instance = null;
                 Destroy(gameObject);
                 Logger.DebugLog("DTV App Destroyed.");
@@ -476,11 +591,20 @@ namespace DraftTwitchViewers
         /// </summary>
         private void OnGUI()
         {
-            if (UseKSPSkin)
+             if (ScenarioDraftManager.Instance == null)
+                return;
+           if (UseKSPSkin)
                 ActiveSkin = HighLogic.Skin;
             else
                 ActiveSkin = GUI.skin;
+            if (ScenarioDraftManager.Instance.AuthNeeded && ((isShowing || isHovering) && !isUIHidden))
+            {
+                if (authWinVisible)
+                    ClickThruBlocker.GUILayoutWindow(GetInstanceID(), windowRect, AuthWinWindow, "Draft Twitch Viewers Authorization", ActiveSkin.window);
+                Reposition(true);
 
+                return;
+            }
             // If the app is showing ir hovered over,
             if ((isShowing || isHovering) && !isUIHidden)
             {
@@ -506,12 +630,6 @@ namespace DraftTwitchViewers
         {
             if (ScenarioDraftManager.Instance == null)
                 return;
-            if (ScenarioDraftManager.Instance.channel == null)
-            {
-                Log.Error("AppWindow: ScenarioDraftManager.Instance.channel is null");
-                return;
-            }
-
             if (GUI.Button(new Rect(windowRect.width - 20, 2, 18, 18), "x"))
 
             {
@@ -525,13 +643,9 @@ namespace DraftTwitchViewers
             GUILayout.Label("", ActiveSkin.label);
 
 
-            // Channel
-            GUILayout.Label("Channel (Lowercase):", ActiveSkin.label);
-            ScenarioDraftManager.Instance.channel = GUILayout.TextField(ScenarioDraftManager.Instance.channel, ActiveSkin.textField);
-
             //Spacer Label
             GUILayout.Label("", ActiveSkin.label);
-            
+
             // If career, display the cost of next draft.
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
             {
@@ -545,9 +659,6 @@ namespace DraftTwitchViewers
             // Draft a Viewer from Twitch, skipping viewers who aren't Pilots.
             if (GUILayout.Button("Draft a Pilot", ActiveSkin.button))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(false, "Pilot");
             }
@@ -555,9 +666,6 @@ namespace DraftTwitchViewers
             // Draft a Viewer from Twitch, skipping viewers who aren't Engineers.
             if (GUILayout.Button("Draft an Engineer", ActiveSkin.button))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(false, "Engineer");
             }
@@ -565,19 +673,13 @@ namespace DraftTwitchViewers
             // Draft a Viewer from Twitch, skipping viewers who aren't Scientists.
             if (GUILayout.Button("Draft a Scientist", ActiveSkin.button))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(false, "Scientist");
             }
 
             // Draft a Viewer from Twitch, with any job.
-            if (GUILayout.Button("Draft Any Viewer", ActiveSkin.button))
+            if (GUILayout.Button("Draft Any Job", ActiveSkin.button))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(false);
             }
@@ -590,15 +692,12 @@ namespace DraftTwitchViewers
             // Pull a name for a drawing
             if (GUILayout.Button("Do a Viewer Drawing", ActiveSkin.button))
             {
-                // Lowercase the channel.
-                ScenarioDraftManager.Instance.channel = ScenarioDraftManager.Instance.channel.ToLower();
-
                 // Perform the draft.
                 DoDraft(true);
             }
-  
+
             GUI.enabled = (ScenarioDraftManager.Instance.DrawnUsers.Count > 0);
-   
+
             // Reset drawing list
             if (GUILayout.Button((ScenarioDraftManager.Instance.DrawnUsers.Count == 0 ? "Drawn User List Empty!" : "Empty Drawn User List"), ActiveSkin.button))
             {
@@ -607,7 +706,7 @@ namespace DraftTwitchViewers
                 // Save the list.
                 ScenarioDraftManager.Instance.SaveDrawn();
             }
-#if false
+
             GUI.enabled = (ScenarioDraftManager.Instance.AlreadyDrafted.Count > 0);
             // Reset drafting list
             if (GUILayout.Button((ScenarioDraftManager.Instance.AlreadyDrafted.Count == 0 ? "Drawn User List Empty!" : "Empty Drafted User List"), ActiveSkin.button))
@@ -617,7 +716,7 @@ namespace DraftTwitchViewers
                 // Save the list.
                 //ScenarioDraftManager.Instance.SaveDrafted();
             }
-#endif
+
             GUI.enabled = true;
 
             //Spacer Label
@@ -670,7 +769,7 @@ namespace DraftTwitchViewers
                     ScenarioDraftManager.Instance.SaveGlobalSettings();
                 }
             }
- 
+
             //Version Label
             GUILayout.Label("Version " + (typeof(DraftManagerApp).Assembly.GetName().Version.ToString()), ActiveSkin.label);
             GUILayout.EndVertical();
@@ -715,9 +814,9 @@ namespace DraftTwitchViewers
             isUIHidden = true;
         }
 
-#endregion
+        #endregion
 
-#region KSP Functions
+        #region KSP Functions
 
         /// <summary>
         /// Sets up for a draft.
@@ -726,6 +825,7 @@ namespace DraftTwitchViewers
         /// <param name="job">The job for the Kerbal. Optional and defaults to "Any" and is not needed if forDrawing is true.</param>
         private void DoDraft(bool forDrawing, string job = "Any")
         {
+
             SaveSettings();
             ScenarioDraftManager.Instance.SaveGlobalSettings();
 
@@ -755,11 +855,11 @@ namespace DraftTwitchViewers
         /// Creates a new Kerbal based on the provided name.
         /// </summary>
         /// <param name="kerbalName">The name of the new Kerbal.</param>
-        private void DraftSuccess(Dictionary<string, string> info)
+        private void DraftSuccess(Draftee info)
         {
             ProtoCrewMember newKerbal = HighLogic.CurrentGame.CrewRoster.GetNewKerbal();
-            newKerbal.ChangeName(info["name"]);
-            KerbalRoster.SetExperienceTrait(newKerbal, info["job"]);
+            newKerbal.ChangeName(info.name);
+            KerbalRoster.SetExperienceTrait(newKerbal, info.job);
 
             // If the game is career, subtract the cost of hiring.
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
@@ -791,7 +891,7 @@ namespace DraftTwitchViewers
             else
             {
                 // Alert in-game.
-                alertingMsg = draftMessage.Replace("&user", info["name"]).Replace("&skill", newKerbal.experienceTrait.Title);
+                alertingMsg = draftMessage.Replace("&user", info.name).Replace("&skill", newKerbal.experienceTrait.Title);
                 draftBusy = false;
                 failedToDraft = false;
                 alertShowing = true;
@@ -804,10 +904,10 @@ namespace DraftTwitchViewers
         /// Displays the winner of the drawing.
         /// </summary>
         /// <param name="winner">The winner of the drawing.</param>
-        private void DrawingSuccess(Dictionary<string, string> info)
+        private void DrawingSuccess(Draftee info)
         {
             // Alert in-game.
-            alertingMsg = drawMessage.Replace("&user", info["winner"]);
+            alertingMsg = drawMessage.Replace("&user", info.name);
             draftBusy = false;
             failedToDraft = false;
             alertShowing = true;
@@ -856,10 +956,10 @@ namespace DraftTwitchViewers
                 // Write the UseKSPSkin setting to it.
                 draftSettings.SetValue("UseKSPSkin", UseKSPSkin, true);
 
-                
+
 
                 // Write the addToCraft setting to it.
-                draftSettings.SetValue("addToCraft", addToCraft.ToString(), true); 
+                draftSettings.SetValue("addToCraft", addToCraft.ToString(), true);
 
                 // Get the message settings node.
                 ConfigNode messageSettings = globalSettings.GetNode("MESSAGES");
@@ -873,7 +973,7 @@ namespace DraftTwitchViewers
 
                 // Write the messages to it.
                 messageSettings.SetValue("draftMessage", draftMessage, true);
-                messageSettings.SetValue("drawMessage", drawMessage, true); 
+                messageSettings.SetValue("drawMessage", drawMessage, true);
 
                 // Save the file.
                 globalSettings.Save(settingsLocation + "GlobalSettings.cfg");
@@ -905,9 +1005,9 @@ namespace DraftTwitchViewers
             }
         }
 
-#endregion
+        #endregion
 
-#region Misc Methods
+        #region Misc Methods
 
         /// <summary>
         /// Determines if the game is currently in Preflight status (The loaded scene is Flight and the active vessel is on the LaunchPad or Runway).
@@ -927,6 +1027,6 @@ namespace DraftTwitchViewers
             }
         }
 
-#endregion
+        #endregion
     }
 }
