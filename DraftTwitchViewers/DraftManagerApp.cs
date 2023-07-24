@@ -11,7 +11,7 @@ namespace DraftTwitchViewers
     /// <summary>
     /// The Draft Manager App. This app is used to connect to twitch and draft users into the game as Kerbals.
     /// </summary>
-    [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
+    [KSPAddon(KSPAddon.Startup.SpaceCentre, true)]
     public class DraftManagerApp : MonoBehaviour
     {
         #region Variables
@@ -217,7 +217,7 @@ namespace DraftTwitchViewers
             // Save this instance so others can detect it.
             instance = this;
 
-            SoundManager.LoadSound("DraftTwitchViewers/Sounds/a", "Start");
+            SoundManager.LoadSound("DraftTwitchViewers/Sounds/", "Start");
             SoundManager.LoadSound("DraftTwitchViewers/Sounds/Success", "Success");
             SoundManager.LoadSound("DraftTwitchViewers/Sounds/Failure", "Failure");
             startClip = SoundManager.CreateSound("Start", false);
@@ -302,7 +302,7 @@ namespace DraftTwitchViewers
             Logger.DebugLog("DTV App Created.");
         }
 
-            GameObject myplayer = new GameObject();
+            static GameObject  myplayer = new GameObject();
 
         /// <summary>
         /// Called when the MonoBehaviour is started.
@@ -316,7 +316,6 @@ namespace DraftTwitchViewers
             myplayer.AddComponent<TextTyper>();
             StatusTextTyper = myplayer.GetComponent<TextTyper>();
             AppOnStreamerAuthenticated = new Action<string>(OnStreamerAuthenticated);
-            myplayer.AddComponent<AuthServerManager>();
 
             authServerManager = myplayer.GetComponent<AuthServerManager>();
 
@@ -350,7 +349,7 @@ namespace DraftTwitchViewers
             }
         }
 
-        public AuthServerManager authServerManager;
+        public static AuthServerManager authServerManager;
         //private string streamerUserId;
         public Action<string> AppOnStreamerAuthenticated;
 
@@ -360,16 +359,25 @@ namespace DraftTwitchViewers
         public void OnStreamerAuthenticated(string displayName)
         {
             streamerDisplayName = displayName;
+
+            myplayer.AddComponent<TextTyper>();
+            StatusTextTyper = myplayer.GetComponent<TextTyper>();
+
             StatusTextTyper.FullText = $"Ready to draft from: {streamerDisplayName}";
             ScenarioDraftManager.Instance.AuthNeeded = false;
         }
 
         private void AuthorizeStreamer()
         {
+            Logger.LogInfo("AuthorizeStreamer 1");
             string csrfPreventionToken = Guid.NewGuid().ToString();
             if (authServerManager == null)
             {
+                Logger.LogInfo("AuthorizeStreamer 2");
+                myplayer = new GameObject();
+                myplayer.AddComponent<AuthServerManager>();
                 authServerManager = myplayer.GetComponent<AuthServerManager>();
+
                 if (authServerManager == null)
                 {
                     Logger.LogError("Unable to get the AuthServerManager component");
@@ -386,12 +394,14 @@ namespace DraftTwitchViewers
 
         private void AuthenticateStreamer()
         {
+            Logger.LogInfo("AuthenticateStreamer 1");
             if (ScenarioDraftManager.Instance.StreamerAccessToken == "")
             {
                 ScenarioDraftManager.Instance.AuthNeeded = true;
 
                 return;
             }
+            Logger.LogInfo("AuthenticateStreamer 2");
 
             // Web requests are an async process, and coroutines don't like giving back data, so Action callbacks must be used.
             StartCoroutine(

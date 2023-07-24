@@ -1,5 +1,9 @@
 ChangeLog
 
+2.7.2.1
+	Fixed typo for Start sound
+	Fixed issue when trying to authenticate when not on first screen
+
 2.7.2
 	Added Twitch authentication to replace old http calls which Twitch  deprecated
 	Saved authentication in local file

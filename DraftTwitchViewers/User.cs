@@ -29,6 +29,8 @@ namespace DraftTwitchViewers
 
         public static IEnumerator GetFirstUser(string query, QueryBy queryBy, Action<User> onSuccess, Action<Error> onFailure)
         {
+            Logger.LogInfo("GetFirstUser 1");
+
             string url = "https://api.twitch.tv/helix/users";
             UnityWebRequest request = new UnityWebRequest();
 
@@ -78,7 +80,11 @@ namespace DraftTwitchViewers
             User user = new User();
             user.Id = dict["id"].ToString();
             user.DisplayName = dict["display_name"].ToString();
+            Logger.LogInfo("GetFirstUser 2");
+
             onSuccess.Invoke(user);
+            Logger.LogInfo("GetFirstUser 3");
+
         }
     }
 }
