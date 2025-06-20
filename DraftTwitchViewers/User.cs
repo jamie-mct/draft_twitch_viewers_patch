@@ -27,6 +27,7 @@ namespace DraftTwitchViewers
         //[JsonProperty(PropertyName = "display_name")]
         public string DisplayName { get; private set; }
 
+        #region NO_LOCALIZATION
         public static IEnumerator GetFirstUser(string query, QueryBy queryBy, Action<User> onSuccess, Action<Error> onFailure)
         {
             Logger.LogInfo("GetFirstUser 1");
@@ -86,5 +87,6 @@ namespace DraftTwitchViewers
             Logger.LogInfo("GetFirstUser 3");
 
         }
+        #endregion
     }
 }

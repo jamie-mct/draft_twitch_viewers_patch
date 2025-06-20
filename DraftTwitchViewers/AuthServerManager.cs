@@ -1,4 +1,5 @@
-﻿using System;
+using KSP.Localization;
+using System;
 using System.Collections;
 using System.Net;
 using System.Text;
@@ -24,11 +25,11 @@ namespace DraftTwitchViewers
 #if false
         public void  Start()
         {
-            Logger.LogInfo("AuthServerManager.Start");
+            Logger.LogInfo("AuthServerManager.Start");  // NO_LOCALIZATION
         }
         private void OnDestroy()
         {
-            Logger.LogInfo("AuthServerManager.OnDestroy");
+            Logger.LogInfo("AuthServerManager.OnDestroy"); // NO_LOCALIZATION
         }
 #endif
 
@@ -41,7 +42,7 @@ namespace DraftTwitchViewers
             authTokenReceived = "";
             if (authToken == "") 
             {
-                Logger.LogInfo("authToken is empty, exiting");
+                Logger.LogInfo("authToken is empty, exiting"); // NO_LOCALIZATION
                 return; 
             }
 
@@ -65,7 +66,7 @@ namespace DraftTwitchViewers
             this.csrfPreventionToken = csrfPreventionToken;
             this.authCompleteCallback = authCompleteCallback;
             serverListener = new HttpListener();
-            serverListener.Prefixes.Add("http://localhost:2551/");
+            serverListener.Prefixes.Add("http://localhost:2551/"); // NO_LOCALIZATION
             serverListener.Start();
             serverThread = new Thread(ListenForAuth);
             serverThread.Start();
@@ -86,37 +87,40 @@ namespace DraftTwitchViewers
                 HttpListenerRequest req = ctx.Request;
                 HttpListenerResponse res = ctx.Response;
 
+                            string str = Localizer.Format("#LOC_DTW_1");
                 switch (req.Url.AbsolutePath)
                 {
                     case "/authorize":
-                        if (req.HttpMethod != "GET")
+                        if (req.HttpMethod != "GET") // NO_LOCALIZATION
                         {
-                            ErrorPage(res, 405, $"Bruh, this is a temporary Twitch auth server for a KSP 2 mod. You can only GET, not {req.HttpMethod} KEKW");
+                            ErrorPage(res, 405, str + $" {req.HttpMethod} KEKW");  // NO_LOCALIZATION
                             break;
                         }
                         SuccessPage(res);
                         break;
                     case "/data":
-                        if (req.HttpMethod != "GET")
+                        if (req.HttpMethod != "GET") // NO_LOCALIZATION
                         {
-                            ErrorResponse(res, 405, $"Bruh, this is a temporary Twitch auth server for a KSP 2 mod. You can only GET, not {req.HttpMethod} KEKW");
+                            ErrorResponse(res, 405, str + $" {req.HttpMethod} KEKW"); // NO_LOCALIZATION
                             break;
                         }
-                        if (req.QueryString["state"] != csrfPreventionToken)
+                        if (req.QueryString["state"] != csrfPreventionToken) // NO_LOCALIZATION
                         {
-                            ErrorResponse(res, 403, $"Walp, the CSRF prevention token didn't match, so I guess someone's trying to attack your auth attempt MonkaS");
+                            ErrorResponse(res, 403, Localizer.Format("#LOC_DTW_2"));
                             break;
                         }
-                        if (req.QueryString["access_token"] == null)
+                        if (req.QueryString["access_token"] == null) // NO_LOCALIZATION
                         {
-                            ErrorResponse(res, 400, $"Auth token? modCheck");
+                            ErrorResponse(res, 400, Localizer.Format("#LOC_DTW_3"));
                             break;
                         }
-                        authTokenReceived = string.Copy(req.QueryString["access_token"]);
+                        authTokenReceived = string.Copy(req.QueryString["access_token"]); // NO_LOCALIZATION
                         SuccessResponse(res);
                         return;
                     default:
-                        ErrorPage(res, 404, $"Bruh, this is a temporary Twitch auth server for a KSP 2 mod. \"{req.Url.AbsolutePath}\" doesn't exist KEKW");
+                        str = Localizer.Format("#LOC_DTW_4");
+                        string str2 = Localizer.Format("#LOC_DTW_5");
+                        ErrorPage(res, 404,str + $"{req.Url.AbsolutePath}" + str2); // NO_LOCALIZATION
                         break;
                 }
             }
@@ -125,7 +129,7 @@ namespace DraftTwitchViewers
         private void SuccessPage(HttpListenerResponse res)
         {
             byte[] content = Encoding.UTF8.GetBytes(string.Format(successTemplate, header));
-            res.ContentType = "text/html";
+            res.ContentType = "text/html"; // NO_LOCALIZATION
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = content.LongLength;
             res.OutputStream.Write(content, 0, content.Length);
@@ -134,8 +138,8 @@ namespace DraftTwitchViewers
 
         private void SuccessResponse(HttpListenerResponse res)
         {
-            byte[] content = Encoding.UTF8.GetBytes("ok");
-            res.ContentType = "text/plain";
+            byte[] content = Encoding.UTF8.GetBytes("ok"); // NO_LOCALIZATION
+            res.ContentType = "text/plain"; // NO_LOCALIZATION
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = content.LongLength;
             res.OutputStream.Write(content, 0, content.Length);
@@ -146,7 +150,7 @@ namespace DraftTwitchViewers
         {
             byte[] content = Encoding.UTF8.GetBytes(string.Format(bodyTemplate, header, status, error));
             res.StatusCode = status;
-            res.ContentType = "text/html";
+            res.ContentType = "text/html"; // NO_LOCALIZATION
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = content.LongLength;
             res.OutputStream.Write(content, 0, content.Length);
@@ -155,15 +159,16 @@ namespace DraftTwitchViewers
 
         private void ErrorResponse(HttpListenerResponse res, int status, string error)
         {
-            byte[] content = Encoding.UTF8.GetBytes($"{status} - {error}");
+            byte[] content = Encoding.UTF8.GetBytes($"{status} - {error}"); // NO_LOCALIZATION
             res.StatusCode = status;
-            res.ContentType = "text/plain";
+            res.ContentType = "text/plain"; // NO_LOCALIZATION
             res.ContentEncoding = Encoding.UTF8;
             res.ContentLength64 = content.LongLength;
             res.OutputStream.Write(content, 0, content.Length);
             res.Close();
         }
 
+        #region NO_LOCALIZATION
         // HTML stuff aaaaaall the way down here so it doesn't clutter the actual code.
         private const string header = @"<head>
         <title>Draft Your Viewers 2</title>
@@ -235,3 +240,4 @@ namespace DraftTwitchViewers
 ";
     }
 }
+#endregion

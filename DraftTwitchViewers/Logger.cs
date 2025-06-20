@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using UnityEngine;
 
+#region NO_LOCALIZATION
 namespace DraftTwitchViewers
 {
     class Logger
@@ -46,3 +47,4 @@ namespace DraftTwitchViewers
         }
     }
 }
+#endregion

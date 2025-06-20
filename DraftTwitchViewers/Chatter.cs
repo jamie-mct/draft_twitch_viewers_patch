@@ -25,6 +25,7 @@ namespace DraftTwitchViewers
             LoginName = login_name;
             DisplayName = user_name;
         }
+        #region NO_LOCALIZATION
         public void PopulateFromJSON(object ar)
         {
             Hashtable table = ar as Hashtable;
@@ -34,6 +35,7 @@ namespace DraftTwitchViewers
             try { this.DisplayName = (string)table["DisplayName"]; } catch { }
 
         }
+        #endregion
         private static void EnsureCache()
         {
             if (ChattersCache == null)
@@ -71,18 +73,18 @@ namespace DraftTwitchViewers
             // Technically, chatter data can move around, grow, or shrink on the Twitch side throughout this process, possibly even resulting in duplicate
             // chatters appearing in the list. But I've already overengineered the hecc out of this, and this is just a mod, so let's not worry about that.
             PaginatedArray<Chatter> chatters = new PaginatedArray<Chatter>();
-            string url = $"https://api.twitch.tv/helix/chat/chatters?broadcaster_id={userId}&moderator_id={userId}&first=1000";
+            string url = $"https://api.twitch.tv/helix/chat/chatters?broadcaster_id={userId}&moderator_id={userId}&first=1000"; // NO_LOCALIZATION
             do
             {
                 string pageUrl = url;
                 if (chatters.Pagination.Cursor != "")
                 {
-                    pageUrl += $"&after={chatters.Pagination.Cursor}";
+                    pageUrl += $"&after={chatters.Pagination.Cursor}"; // NO_LOCALIZATION
                 }
                 UnityWebRequest request = new UnityWebRequest(pageUrl);
                 request.downloadHandler = new DownloadHandlerBuffer();
-                request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-                request.SetRequestHeader("Client-Id", ScenarioDraftManager.clientID);
+                request.SetRequestHeader("Authorization", $"Bearer {accessToken}"); // NO_LOCALIZATION
+                request.SetRequestHeader("Client-Id", ScenarioDraftManager.clientID); // NO_LOCALIZATION
                 yield return request.SendWebRequest();
 
                 if (request.responseCode != 200)

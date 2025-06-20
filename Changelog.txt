@@ -1,5 +1,8 @@
 ChangeLog
 
+2.7.3
+	Localized all displayable strings in the mod
+
 2.7.2.1
 	Fixed typo for Start sound
 	Fixed issue when trying to authenticate when not on first screen

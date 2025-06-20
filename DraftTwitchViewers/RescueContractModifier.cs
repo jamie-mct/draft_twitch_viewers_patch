@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using KSP.Localization;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Contracts;
@@ -126,7 +127,7 @@ namespace DraftTwitchViewers
                             if (!working)
                             {
                                 // Begin a draft and indicate waiting status.
-                                StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, "Any"));
+                                StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, Localizer.Format("#LOC_DTW_60")));
                                 working = true;
                             }
                         }
@@ -148,7 +149,7 @@ namespace DraftTwitchViewers
             Contract toMod = contractsToModify.Dequeue();
 
             // Create a ConfigNode to save the contract into.
-            ConfigNode replacement = new ConfigNode("CONTRACT");
+            ConfigNode replacement = new ConfigNode(Localizer.Format("#LOC_DTW_61"));
             toMod.Save(replacement);
 
             // Get the old Kerbal name for later use.
@@ -210,7 +211,7 @@ namespace DraftTwitchViewers
             Contract.Load(toMod, replacement);
 
             // Logging.
-            Logger.DebugLog("Draft Success (" + contractsToModify.Count.ToString() + " contracts waiting): " + info.name);
+            Logger.DebugLog(Localizer.Format("#LOC_DTW_62") + contractsToModify.Count.ToString() + Localizer.Format("#LOC_DTW_63") + info.name);
 
             // Refresh the contract list by firing the onContractListChanged event.
             GameEvents.Contract.onContractsListChanged.Fire();
@@ -219,7 +220,7 @@ namespace DraftTwitchViewers
             if (contractsToModify.Count > 0)
             {
                 // Begin another draft.
-                StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, "Any"));
+                StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, Localizer.Format("#LOC_DTW_60")));
             }
             // Else, the queue is empty.
             else
@@ -236,14 +237,17 @@ namespace DraftTwitchViewers
         void DraftFailure(string reason)
         {
             // If the reason is because a channel isn't specified,
-            if (reason == "Please specify a channel!")
+            if (reason == Localizer.Format("#LOC_DTW_64"))
             {
                 // Simply clear the contract queue and then indicate a stop in waiting status.
                 contractsToModify.Clear();
                 working = false;
 
                 // Notify the player that the contract draft failed because of a lack of channel.
-                ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">Contract draft FAILED. (Please input a channel to draft from.)</color>", 5f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">" +   // NO_LOCALIZATION
+                    Localizer.Format("#LOC_DTW_65") +
+                    "</color>", 5f, ScreenMessageStyle.UPPER_CENTER); // NO_LOCALIZATION
+
 
             }
             // Else, follow normal failure procedure.
@@ -253,13 +257,13 @@ namespace DraftTwitchViewers
                 failures++;
 
                 // Log a warning with the reason.
-                Logger.DebugWarning("Contract Draft failed (" + failures.ToString() + " failures): " + reason);
+                Logger.DebugWarning(Localizer.Format("#LOC_DTW_66") + failures.ToString() + Localizer.Format("#LOC_DTW_67") + reason);
 
                 // If the queue is not empty, and the failure count isn't 5,
                 if (contractsToModify.Count > 0 && failures < 5)
                 {
                     // Retry the draft.
-                    StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, "Any"));
+                    StartCoroutine(ScenarioDraftManager.DraftKerbal(DraftSuccess, DraftFailure, false, false, Localizer.Format("#LOC_DTW_60")));
                 }
                 // Else, the queue is empty, or 5 failures have occurred.
                 else
@@ -273,7 +277,9 @@ namespace DraftTwitchViewers
                 {
                     // Notify the player that the contract draft failed consecutively.
                     //ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">Contract draft FAILED. (5 failed attempts. Deactivating.)</color>", 5f, ScreenMessageStyle.UPPER_CENTER);
-                    ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">Contract draft FAILED. (5 failed attempts. Starting 5 minute pause.)</color>", 5f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">" + // NO_LOCALIZATION
+                        Localizer.Format("#LOC_DTW_68") +
+                        "</color>", 5f, ScreenMessageStyle.UPPER_CENTER); // NO_LOCALIZATION
 
                     StartCoroutine(PauseBeforeRestart());
 
@@ -287,7 +293,7 @@ namespace DraftTwitchViewers
 
         public IEnumerator PauseBeforeRestart()
         {
-            Logger.DebugError("5 failed contracts, pausing for 5 minutes");
+            Logger.DebugError(Localizer.Format("#LOC_DTW_69"));
             ScenarioDraftManager.pausedForFailure = true;
             yield return new WaitForSeconds(300f);
 

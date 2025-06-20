@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using KSP.UI.Screens;
-
+using KSP.Localization;
 using ClickThroughFix;
-using ToolbarControl_NS;
+using KSP.UI.Screens;
 using System;
+using System.Collections.Generic;
+using ToolbarControl_NS;
+using UnityEngine;
 
 namespace DraftTwitchViewers
 {
@@ -115,11 +115,14 @@ namespace DraftTwitchViewers
         /// <summary>
         /// The message used when a draft succeeds.
         /// </summary>
-        private string draftMessage = "&user has been drafted as a &skill!";
+        private string draftMessage = "&user " + // NO_LOCALIZATION
+            Localizer.Format("#LOC_DTW_6") +
+            "&skill!"; // NO_LOCALIZATION
         /// <summary>
         /// The message used when a user is pulled in a drawing.
         /// </summary>
-        private string drawMessage = "&user has won the drawing!";
+        private string drawMessage = "&user " + // NO_LOCALIZATION
+            Localizer.Format("#LOC_DTW_7");
 
         #endregion
 
@@ -217,6 +220,7 @@ namespace DraftTwitchViewers
             // Save this instance so others can detect it.
             instance = this;
 
+            #region NO_LOCALIZATION
             SoundManager.LoadSound("DraftTwitchViewers/Sounds/", "Start");
             SoundManager.LoadSound("DraftTwitchViewers/Sounds/Success", "Success");
             SoundManager.LoadSound("DraftTwitchViewers/Sounds/Failure", "Failure");
@@ -226,10 +230,14 @@ namespace DraftTwitchViewers
 
             // Load global settings.
             ConfigNode globalSettings = ConfigNode.Load(settingsLocation + "GlobalSettings.cfg");
+            #endregion
+
             // If the file exists,
             if (globalSettings != null)
             {
                 #region Draft Settings Load
+                #region NO_LOCALIZATION
+
                 // Get the DRAFT node.
                 ConfigNode draftSettings = globalSettings.GetNode("DRAFT");
 
@@ -246,8 +254,11 @@ namespace DraftTwitchViewers
                     Logger.DebugWarning("GlobalSettings.cfg WAS found, but the DRAFT node was not. Using defaults.");
                 }
                 #endregion
+                #endregion
 
                 #region Message Settings Load
+                #region NO_LOCALIZATION
+
                 // Get the MESSAGES node.
                 ConfigNode messageSettings = globalSettings.GetNode("MESSAGES");
 
@@ -265,7 +276,9 @@ namespace DraftTwitchViewers
                     Logger.DebugWarning("GlobalSettings.cfg WAS found, but the MESSAGES node was not. Using defaults.");
                 }
                 #endregion
+                #endregion
             }
+            #region NO_LOCALIZATION
             // If the file doesn't exist,
             else
             {
@@ -301,8 +314,9 @@ namespace DraftTwitchViewers
             GameEvents.onGameSceneLoadRequested.Add(DestroyApp);
             Logger.DebugLog("DTV App Created.");
         }
+        #endregion
 
-            static GameObject  myplayer = new GameObject();
+        static GameObject myplayer = new GameObject();
 
         /// <summary>
         /// Called when the MonoBehaviour is started.
@@ -330,7 +344,7 @@ namespace DraftTwitchViewers
                 using (new GUILayout.HorizontalScope())
                 {
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("Click to Authorize with Twitch", GUILayout.Height(40), GUILayout.Width(240)))
+                    if (GUILayout.Button(Localizer.Format("#LOC_DTW_8"), GUILayout.Height(40), GUILayout.Width(240)))
                     {
                         AuthorizeStreamer();
                         authWinVisible = false;
@@ -341,7 +355,7 @@ namespace DraftTwitchViewers
                 using (new GUILayout.HorizontalScope())
                 {
                     GUILayout.FlexibleSpace();
-                    GUILayout.Label("This will only need to be done one time");
+                    GUILayout.Label(Localizer.Format("#LOC_DTW_9"));
                     GUILayout.FlexibleSpace();
                 }
                 GUILayout.FlexibleSpace();
@@ -363,24 +377,25 @@ namespace DraftTwitchViewers
             myplayer.AddComponent<TextTyper>();
             StatusTextTyper = myplayer.GetComponent<TextTyper>();
 
-            StatusTextTyper.FullText = $"Ready to draft from: {streamerDisplayName}";
+            StatusTextTyper.FullText = Localizer.Format("#LOC_DTW_10") +
+                $"{streamerDisplayName}";  // NO_LOCALIZATION
             ScenarioDraftManager.Instance.AuthNeeded = false;
         }
 
         private void AuthorizeStreamer()
         {
-            Logger.LogInfo("AuthorizeStreamer 1");
+            Logger.LogInfo("AuthorizeStreamer 1"); // NO_LOCALIZATION
             string csrfPreventionToken = Guid.NewGuid().ToString();
             if (authServerManager == null)
             {
-                Logger.LogInfo("AuthorizeStreamer 2");
+                Logger.LogInfo("AuthorizeStreamer 2"); // NO_LOCALIZATION
                 myplayer = new GameObject();
                 myplayer.AddComponent<AuthServerManager>();
                 authServerManager = myplayer.GetComponent<AuthServerManager>();
 
                 if (authServerManager == null)
                 {
-                    Logger.LogError("Unable to get the AuthServerManager component");
+                    Logger.LogError("Unable to get the AuthServerManager component"); // NO_LOCALIZATION
                     return;
                 }
             }
@@ -389,19 +404,19 @@ namespace DraftTwitchViewers
                     ScenarioDraftManager.Instance.StreamerAccessToken = accessToken;
                     AuthenticateStreamer();
                 }));
-            Application.OpenURL($"https://id.twitch.tv/oauth2/authorize?client_id={ScenarioDraftManager.clientID}&redirect_uri=http://localhost:2551/authorize&response_type=token&scope=moderator:read:chatters&state={csrfPreventionToken}");
+            Application.OpenURL($"https://id.twitch.tv/oauth2/authorize?client_id={ScenarioDraftManager.clientID}&redirect_uri=http://localhost:2551/authorize&response_type=token&scope=moderator:read:chatters&state={csrfPreventionToken}"); // NO_LOCALIZATION
         }
 
         private void AuthenticateStreamer()
         {
-            Logger.LogInfo("AuthenticateStreamer 1");
+            Logger.LogInfo("AuthenticateStreamer 1"); // NO_LOCALIZATION
             if (ScenarioDraftManager.Instance.StreamerAccessToken == "")
             {
                 ScenarioDraftManager.Instance.AuthNeeded = true;
 
                 return;
             }
-            Logger.LogInfo("AuthenticateStreamer 2");
+            Logger.LogInfo("AuthenticateStreamer 2"); // NO_LOCALIZATION
 
             // Web requests are an async process, and coroutines don't like giving back data, so Action callbacks must be used.
             StartCoroutine(
@@ -415,7 +430,7 @@ namespace DraftTwitchViewers
                         AppOnStreamerAuthenticated.Invoke(user.DisplayName);
                     }), new Action<Error>((Error err) =>
                     {
-                        Logger.LogError($"Failed to authenticate with status {err.Status}: {err.ErrorText} - {err.Message}\nClearing config user data.");
+                        Logger.LogError($"Failed to authenticate with status {err.Status}: {err.ErrorText} - {err.Message}\nClearing config user data."); // NO_LOCALIZATION
                         /* Config. */
                         ScenarioDraftManager.Instance.StreamerAccessToken = "";
                         //FileManager.SaveDraftConfig(Config);
@@ -438,19 +453,19 @@ namespace DraftTwitchViewers
                     ScenarioDraftManager.Instance.StreamerAccessToken,
                     new Action<PaginatedArray<Chatter>>((PaginatedArray<Chatter> chatters) =>
                     {
-                        Logger.LogInfo($"{chatters.Data.Count} pulled.");
+                        Logger.LogInfo($"{chatters.Data.Count} pulled."); // NO_LOCALIZATION
 
                         if (chatters.Data.Count == 0)
                         {
-                            Logger.LogWarn($"Failed to pick viewer. Empty chat.");
-                            onError.Invoke("Something went wrong!\n\nLooks like no one is in your chat.");
+                            Logger.LogWarn($"Failed to pick viewer. Empty chat."); // NO_LOCALIZATION
+                            onError.Invoke(Localizer.Format("#LOC_DTW_11"));
                             return;
                         }
                         onViewerDrafted.Invoke(chatters);
                     }), new Action<Error>((Error err) =>
                     {
-                        Logger.LogError($"Failed to pick viewer with status {err.Status}: {err.ErrorText} - {err.Message}");
-                        onError.Invoke("Something went wrong!\n\nCouldn't get your chatters from Twitch.");
+                        Logger.LogError($"Failed to pick viewer with status {err.Status}: {err.ErrorText} - {err.Message}"); // NO_LOCALIZATION
+                        onError.Invoke(Localizer.Format("#LOC_DTW_12"));
                     })
                 )
             );
@@ -580,7 +595,7 @@ namespace DraftTwitchViewers
 
                 instance = null;
                 Destroy(gameObject);
-                Logger.DebugLog("DTV App Destroyed.");
+                Logger.DebugLog(Localizer.Format("#LOC_DTW_13"));
 
             }
         }
@@ -601,16 +616,16 @@ namespace DraftTwitchViewers
         /// </summary>
         private void OnGUI()
         {
-             if (ScenarioDraftManager.Instance == null)
+            if (ScenarioDraftManager.Instance == null)
                 return;
-           if (UseKSPSkin)
+            if (UseKSPSkin)
                 ActiveSkin = HighLogic.Skin;
             else
                 ActiveSkin = GUI.skin;
             if (ScenarioDraftManager.Instance.AuthNeeded && ((isShowing || isHovering) && !isUIHidden))
             {
                 if (authWinVisible)
-                    ClickThruBlocker.GUILayoutWindow(GetInstanceID(), windowRect, AuthWinWindow, "Draft Twitch Viewers Authorization", ActiveSkin.window);
+                    ClickThruBlocker.GUILayoutWindow(GetInstanceID(), windowRect, AuthWinWindow, Localizer.Format("#LOC_DTW_14"), ActiveSkin.window);
                 Reposition(true);
 
                 return;
@@ -619,14 +634,14 @@ namespace DraftTwitchViewers
             if ((isShowing || isHovering) && !isUIHidden)
             {
                 // Display the window.
-                ClickThruBlocker.GUILayoutWindow(GetInstanceID(), windowRect, AppWindow, "Draft Twitch Viewers", ActiveSkin.window);
+                ClickThruBlocker.GUILayoutWindow(GetInstanceID(), windowRect, AppWindow, Localizer.Format("#LOC_DTW_15"), ActiveSkin.window);
             }
 
             // If the alert is showing,
             if (alertShowing && !isUIHidden)
             {
                 // Display the window.
-                ClickThruBlocker.GUILayoutWindow(GetInstanceID() + 1, alertRect, AlertWindow, "DTV Alert: " + (failedToDraft ? "Failed!" : (draftBusy ? "Working..." : "Success!")), ActiveSkin.window);
+                ClickThruBlocker.GUILayoutWindow(GetInstanceID() + 1, alertRect, AlertWindow, Localizer.Format("#LOC_DTW_16") + (failedToDraft ? Localizer.Format("#LOC_DTW_17") : (draftBusy ? Localizer.Format("#LOC_DTW_18") : Localizer.Format("#LOC_DTW_19"))), ActiveSkin.window);
             }
 
             Reposition();
@@ -649,7 +664,7 @@ namespace DraftTwitchViewers
             GUILayout.BeginVertical(ActiveSkin.box);
 
             // Show draft shortcut (Alt+D)
-            GUILayout.Label("Quick Draft: Alt+Insert (Toggle " + (UseHotkey ? "off" : "on") + " in Customize)", ActiveSkin.label);
+            GUILayout.Label(Localizer.Format("#LOC_DTW_20") + (UseHotkey ? Localizer.Format("#LOC_DTW_21") : Localizer.Format("#LOC_DTW_22")) + Localizer.Format("#LOC_DTW_23"), ActiveSkin.label);
             GUILayout.Label("", ActiveSkin.label);
 
 
@@ -659,7 +674,7 @@ namespace DraftTwitchViewers
             // If career, display the cost of next draft.
             if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
             {
-                GUILayout.Label("Next Draft: -" + (GameVariables.Instance.GetRecruitHireCost(HighLogic.CurrentGame.CrewRoster.GetActiveCrewCount())).ToString("N0") + " Funds", ActiveSkin.label);
+                GUILayout.Label(Localizer.Format("#LOC_DTW_24") + (GameVariables.Instance.GetRecruitHireCost(HighLogic.CurrentGame.CrewRoster.GetActiveCrewCount())).ToString("N0") + Localizer.Format("#LOC_DTW_25"), ActiveSkin.label);
             }
 
             if (PartSelectionManager.Instance != null && PartSelectionManager.Instance.toAdd != null)
@@ -667,28 +682,28 @@ namespace DraftTwitchViewers
 
 
             // Draft a Viewer from Twitch, skipping viewers who aren't Pilots.
-            if (GUILayout.Button("Draft a Pilot", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_26"), ActiveSkin.button))
             {
                 // Perform the draft.
-                DoDraft(false, "Pilot");
+                DoDraft(false, Localizer.Format("#LOC_DTW_27"));
             }
 
             // Draft a Viewer from Twitch, skipping viewers who aren't Engineers.
-            if (GUILayout.Button("Draft an Engineer", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_28"), ActiveSkin.button))
             {
                 // Perform the draft.
-                DoDraft(false, "Engineer");
+                DoDraft(false, Localizer.Format("#LOC_DTW_29"));
             }
 
             // Draft a Viewer from Twitch, skipping viewers who aren't Scientists.
-            if (GUILayout.Button("Draft a Scientist", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_30"), ActiveSkin.button))
             {
                 // Perform the draft.
-                DoDraft(false, "Scientist");
+                DoDraft(false, Localizer.Format("#LOC_DTW_31"));
             }
 
             // Draft a Viewer from Twitch, with any job.
-            if (GUILayout.Button("Draft Any Job", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_32"), ActiveSkin.button))
             {
                 // Perform the draft.
                 DoDraft(false);
@@ -700,7 +715,7 @@ namespace DraftTwitchViewers
             GUILayout.Label("", ActiveSkin.label);
 
             // Pull a name for a drawing
-            if (GUILayout.Button("Do a Viewer Drawing", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_33"), ActiveSkin.button))
             {
                 // Perform the draft.
                 DoDraft(true);
@@ -709,7 +724,7 @@ namespace DraftTwitchViewers
             GUI.enabled = (ScenarioDraftManager.Instance.DrawnUsers.Count > 0);
 
             // Reset drawing list
-            if (GUILayout.Button((ScenarioDraftManager.Instance.DrawnUsers.Count == 0 ? "Drawn User List Empty!" : "Empty Drawn User List"), ActiveSkin.button))
+            if (GUILayout.Button((ScenarioDraftManager.Instance.DrawnUsers.Count == 0 ? Localizer.Format("#LOC_DTW_34") : Localizer.Format("#LOC_DTW_35")), ActiveSkin.button))
             {
                 // Empty the list.
                 ScenarioDraftManager.Instance.DrawnUsers = new List<string>();
@@ -719,7 +734,7 @@ namespace DraftTwitchViewers
 
             GUI.enabled = (ScenarioDraftManager.Instance.AlreadyDrafted.Count > 0);
             // Reset drafting list
-            if (GUILayout.Button((ScenarioDraftManager.Instance.AlreadyDrafted.Count == 0 ? "Drawn User List Empty!" : "Empty Drafted User List"), ActiveSkin.button))
+            if (GUILayout.Button((ScenarioDraftManager.Instance.AlreadyDrafted.Count == 0 ? Localizer.Format("#LOC_DTW_34") : Localizer.Format("#LOC_DTW_36")), ActiveSkin.button))
             {
                 // Empty the list.
                 ScenarioDraftManager.Instance.AlreadyDrafted = new List<string>();
@@ -733,47 +748,49 @@ namespace DraftTwitchViewers
             GUILayout.Label("", ActiveSkin.label);
 
             // Customize
-            if (GUILayout.Button("Customize", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_37"), ActiveSkin.button))
             {
                 isCustomizing = !isCustomizing;
             }
             if (isCustomizing)
             {
                 // Use hotkey toggle.
-                UseHotkey = GUILayout.Toggle(UseHotkey, "Quick Draft Hotkey", ActiveSkin.toggle);
+                UseHotkey = GUILayout.Toggle(UseHotkey, Localizer.Format("#LOC_DTW_38"), ActiveSkin.toggle);
 
                 // Use UseKSPSkin toggle.
-                UseKSPSkin = GUILayout.Toggle(UseKSPSkin, "Use KSP Skin", ActiveSkin.toggle);
+                UseKSPSkin = GUILayout.Toggle(UseKSPSkin, Localizer.Format("#LOC_DTW_39"), ActiveSkin.toggle);
 
                 // Add drafted to craft toggle.
-                AddToCraft = GUILayout.Toggle(AddToCraft, "Add drafted Kerbals to craft (Preflight Only)", ActiveSkin.toggle);
+                AddToCraft = GUILayout.Toggle(AddToCraft, Localizer.Format("#LOC_DTW_40"), ActiveSkin.toggle);
 
                 // Add "Kerman" toggle.
-                ScenarioDraftManager.Instance.AddKerman = GUILayout.Toggle(ScenarioDraftManager.Instance.AddKerman, "Add \"Kerman\" to names", ActiveSkin.toggle);
+                ScenarioDraftManager.Instance.AddKerman = GUILayout.Toggle(ScenarioDraftManager.Instance.AddKerman, Localizer.Format("#LOC_DTW_41"), ActiveSkin.toggle);
 
                 // On successful draft.
-                GUILayout.Label("Successful Draft:", ActiveSkin.label);
+                GUILayout.Label(Localizer.Format("#LOC_DTW_42"), ActiveSkin.label);
                 DraftMessage = GUILayout.TextField(DraftMessage, ActiveSkin.textField);
 
                 // On successful draw.
-                GUILayout.Label("Successful Drawing:", ActiveSkin.label);
+                GUILayout.Label(Localizer.Format("#LOC_DTW_43"), ActiveSkin.label);
                 DrawMessage = GUILayout.TextField(DrawMessage, ActiveSkin.textField);
 
                 // $user Explanation
                 GUILayout.Label("", ActiveSkin.label);
-                GUILayout.Label("\"&user\" = The user drafted.", ActiveSkin.label);
-                GUILayout.Label("\"&skill\" = The user's skill.", ActiveSkin.label);
+                GUILayout.Label("\"&user\" = " + // NO_LOCALIZATION
+                    Localizer.Format("#LOC_DTW_44"), ActiveSkin.label);
+                GUILayout.Label("\"&skill\" = " +  // NO_LOCALIZATION
+                    Localizer.Format("#LOC_DTW_45"), ActiveSkin.label);
 
                 // Bots to remove
                 GUILayout.Label("", ActiveSkin.label);
-                GUILayout.Label("Bots to Remove (One per line, no commas):", ActiveSkin.label);
+                GUILayout.Label(Localizer.Format("#LOC_DTW_46"), ActiveSkin.label);
                 string botsString = string.Join("\n", ScenarioDraftManager.Instance.BotsToRemove.ToArray());
                 botsString = GUILayout.TextArea(botsString, ActiveSkin.textArea);
                 ScenarioDraftManager.Instance.BotsToRemove = new List<string>();
                 if (botsString != "") { ScenarioDraftManager.Instance.BotsToRemove.AddRange(botsString.Split('\n')); }
 
                 // Save
-                if (GUILayout.Button("Save", ActiveSkin.button))
+                if (GUILayout.Button(Localizer.Format("#LOC_DTW_47"), ActiveSkin.button))
                 {
                     SaveSettings();
                     ScenarioDraftManager.Instance.SaveGlobalSettings();
@@ -781,7 +798,7 @@ namespace DraftTwitchViewers
             }
 
             //Version Label
-            GUILayout.Label("Version " + (typeof(DraftManagerApp).Assembly.GetName().Version.ToString()), ActiveSkin.label);
+            GUILayout.Label(Localizer.Format("#LOC_DTW_48") + (typeof(DraftManagerApp).Assembly.GetName().Version.ToString()), ActiveSkin.label);
             GUILayout.EndVertical();
         }
 
@@ -798,7 +815,7 @@ namespace DraftTwitchViewers
 
             // The close button.
             GUILayout.Label("", ActiveSkin.label);
-            if (GUILayout.Button("Close", ActiveSkin.button))
+            if (GUILayout.Button(Localizer.Format("#LOC_DTW_49"), ActiveSkin.button))
             {
                 alertingMsg = "";
                 alertShowing = false;
@@ -833,7 +850,7 @@ namespace DraftTwitchViewers
         /// </summary>
         /// <param name="forDrawing">Whether this draft is for a plain drawing or an actual draft.</param>
         /// <param name="job">The job for the Kerbal. Optional and defaults to "Any" and is not needed if forDrawing is true.</param>
-        private void DoDraft(bool forDrawing, string job = "Any")
+        private void DoDraft(bool forDrawing, string job = "Any") // NO_LOCALIZATION
         {
 
             SaveSettings();
@@ -852,7 +869,7 @@ namespace DraftTwitchViewers
             {
                 if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !Funding.CanAfford(GameVariables.Instance.GetRecruitHireCost(HighLogic.CurrentGame.CrewRoster.GetActiveCrewCount())))
                 {
-                    DraftFailure("You can't afford this draft!");
+                    DraftFailure(Localizer.Format("#LOC_DTW_50"));
                 }
                 else
                 {
@@ -901,7 +918,7 @@ namespace DraftTwitchViewers
             else
             {
                 // Alert in-game.
-                alertingMsg = draftMessage.Replace("&user", info.name).Replace("&skill", newKerbal.experienceTrait.Title);
+                alertingMsg = draftMessage.Replace("&user", info.name).Replace("&skill", newKerbal.experienceTrait.Title); // NO_LOCALIZATION
                 draftBusy = false;
                 failedToDraft = false;
                 alertShowing = true;
@@ -917,7 +934,7 @@ namespace DraftTwitchViewers
         private void DrawingSuccess(Draftee info)
         {
             // Alert in-game.
-            alertingMsg = drawMessage.Replace("&user", info.name);
+            alertingMsg = drawMessage.Replace("&user", info.name); // NO_LOCALIZATION
             draftBusy = false;
             failedToDraft = false;
             alertShowing = true;
@@ -943,6 +960,7 @@ namespace DraftTwitchViewers
         /// <summary>
         /// Saves the settings.
         /// </summary>
+        #region NO_LOCALIZATION
         private void SaveSettings()
         {
             // Load global settings.
@@ -1016,9 +1034,10 @@ namespace DraftTwitchViewers
         }
 
         #endregion
+        #endregion
 
         #region Misc Methods
-
+        #region NO_LOCALIZATION
         /// <summary>
         /// Determines if the game is currently in Preflight status (The loaded scene is Flight and the active vessel is on the LaunchPad or Runway).
         /// </summary>
@@ -1037,6 +1056,7 @@ namespace DraftTwitchViewers
             }
         }
 
+        #endregion
         #endregion
     }
 }

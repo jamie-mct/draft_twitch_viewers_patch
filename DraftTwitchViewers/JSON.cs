@@ -1,4 +1,5 @@
-﻿using System;
+using KSP.Localization;
+using System;
 using System.Collections;
 using System.Globalization;
 using System.Text;
@@ -50,7 +51,7 @@ namespace DraftTwitchViewers
             {
                 if (ienum.Value is ArrayList)
                 {
-                    Logger.LogInfo("data (arraylist) found");
+                    Logger.LogInfo(Localizer.Format("#LOC_DTW_54"));
                     ArrayList arnew = (ArrayList)ienum.Value;
                     foreach (object obj in arnew)
                     {
@@ -263,7 +264,7 @@ namespace DraftTwitchViewers
                 {
                     break;
                 }
-
+                #region NO_LOCALIZATION
                 c = json[index++];
                 if (c == '"')
                 {
@@ -348,6 +349,7 @@ namespace DraftTwitchViewers
 
             return s.ToString();
         }
+        #endregion
 
         protected static double ParseNumber(char[] json, ref int index, ref bool success)
         {
@@ -369,7 +371,7 @@ namespace DraftTwitchViewers
 
             for (lastIndex = index; lastIndex < json.Length; lastIndex++)
             {
-                if ("0123456789+-.eE".IndexOf(json[lastIndex]) == -1)
+                if ("0123456789+-.eE".IndexOf(json[lastIndex]) == -1) // NO_LOCALIZATION
                 {
                     break;
                 }
@@ -381,7 +383,7 @@ namespace DraftTwitchViewers
         {
             for (; index < json.Length; index++)
             {
-                if (" \t\n\r".IndexOf(json[index]) == -1)
+                if (" \t\n\r".IndexOf(json[index]) == -1) // NO_LOCALIZATION
                 {
                     break;
                 }
@@ -480,7 +482,7 @@ namespace DraftTwitchViewers
 
             return JSON.TOKEN_NONE;
         }
-
+        #region  NO_LOCALIZATION
         protected static bool SerializeValue(object value, StringBuilder builder)
         {
             bool success = true;
@@ -547,7 +549,7 @@ namespace DraftTwitchViewers
                 first = false;
             }
 
-            builder.Append("}");
+            builder.Append("}"); // NO_LOCALIZATION
             return true;
         }
 
@@ -630,6 +632,7 @@ namespace DraftTwitchViewers
             builder.Append("\"");
             return true;
         }
+        #endregion
 
         protected static bool SerializeNumber(double number, StringBuilder builder)
         {

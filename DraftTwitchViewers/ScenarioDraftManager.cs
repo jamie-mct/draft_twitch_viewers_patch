@@ -1,4 +1,5 @@
-﻿using System;
+using KSP.Localization;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -131,7 +132,7 @@ namespace DraftTwitchViewers
                 DrawnUsers = new List<string>();
 
                 // Load global settings.
-                ConfigNode globalSettings = ConfigNode.Load(settingsLocation + "GlobalSettings.cfg");
+                ConfigNode globalSettings = ConfigNode.Load(settingsLocation + Localizer.Format("#LOC_DTW_70"));
                 // If the file exists,
                 if (globalSettings != null)
                 {
@@ -157,7 +158,7 @@ namespace DraftTwitchViewers
                     else
                     {
                         // Log a warning that is wasn't found.
-                        Logger.DebugWarning("GlobalSettings.cfg WAS found, but the DRAFT node was not. Using defaults.");
+                        Logger.DebugWarning(Localizer.Format("#LOC_DTW_71"));
                     }
 
                     #endregion
@@ -186,7 +187,7 @@ namespace DraftTwitchViewers
                             else
                             {
                                 // Log a warning that this node is corrupt and is being removed.
-                                Logger.DebugWarning("Corrupt BOT node. Removing.");
+                                Logger.DebugWarning(Localizer.Format("#LOC_DTW_72"));
                                 // Remove the corrupt node.
                                 botsSettings.RemoveNode(c);
                                 // Set doSave to true so the corrupt nodes remain gone.
@@ -198,7 +199,7 @@ namespace DraftTwitchViewers
                     else
                     {
                         // Log a warning that is wasn't found.
-                        Logger.DebugWarning("GlobalSettings.cfg WAS found, but the BOTS node was not. Using empty list.");
+                        Logger.DebugWarning(Localizer.Format("#LOC_DTW_73"));
                     }
 
                     #endregion
@@ -227,7 +228,7 @@ namespace DraftTwitchViewers
                             else
                             {
                                 // Log a warning that this node is corrupt and is being removed.
-                                Logger.DebugWarning("Corrupt DRAWN.USER node. Removing.");
+                                Logger.DebugWarning(Localizer.Format("#LOC_DTW_74"));
                                 // Remove the corrupt node.
                                 drawnSettings.RemoveNode(c);
                                 // Set doSave to true so the corrupt nodes remain gone.
@@ -239,7 +240,7 @@ namespace DraftTwitchViewers
                     else
                     {
                         // Log a warning that is wasn't found.
-                        Logger.DebugWarning("GlobalSettings.cfg WAS found, but the DRAWN node was not. Using empty list.");
+                        Logger.DebugWarning(Localizer.Format("#LOC_DTW_75"));
                     }
 
                     #endregion
@@ -248,14 +249,14 @@ namespace DraftTwitchViewers
                     if (doSave)
                     {
                         // Save the settings file so they remain gone.
-                        globalSettings.Save(settingsLocation + "GlobalSettings.cfg");
+                        globalSettings.Save(settingsLocation + Localizer.Format("#LOC_DTW_70"));
                     }
                 }
                 // If the file doesn't exist,
                 else
                 {
                     // Log a warning that it wasn't found.
-                    Logger.DebugWarning("GlobalSettings.cfg wasn't found. Using defaults.");
+                    Logger.DebugWarning(Localizer.Format("#LOC_DTW_76"));
                 }
 
                 #endregion
@@ -265,7 +266,7 @@ namespace DraftTwitchViewers
             }
             else
             {
-                Logger.DebugWarning("ScenarioDraftManager instance still exists.");
+                Logger.DebugWarning(Localizer.Format("#LOC_DTW_77"));
                 DestroyImmediate(this);
             }
         }
@@ -334,7 +335,7 @@ namespace DraftTwitchViewers
             else
             {
                 // Log a warning that is wasn't found.
-                Logger.DebugWarning("DRAFTED node not found. Using empty list.");
+                Logger.DebugWarning(Localizer.Format("#LOC_DTW_78"));
             }
 
             LegacyLoadLocalSettings();
@@ -375,10 +376,10 @@ namespace DraftTwitchViewers
         public void LegacyLoadLocalSettings()
         {
             // Set the save location.
-            string saveLocation = "saves/" + HighLogic.CurrentGame.Title.Substring(0, HighLogic.CurrentGame.Title.LastIndexOf(' ')) + "/";
+            string saveLocation = "saves/" + HighLogic.CurrentGame.Title.Substring(0, HighLogic.CurrentGame.Title.LastIndexOf(' ')) + "/"; // NO_LOCALIZATION
 
             // Load local settings.
-            ConfigNode localSettings = ConfigNode.Load(saveLocation + "DTVLocalSettings.cfg");
+            ConfigNode localSettings = ConfigNode.Load(saveLocation + "DTVLocalSettings.cfg"); // NO_LOCALIZATION
             // If the file exists,
             if (localSettings != null)
             {
@@ -393,7 +394,7 @@ namespace DraftTwitchViewers
                 if (draftedUsers != null)
                 {
                     // The legacy save was found. Load it and remove it.
-                    Logger.DebugWarning("Legacy file \"DTVLocalSettings.cfg\" was found. Loading and deleting.");
+                    Logger.DebugWarning(Localizer.Format("#LOC_DTW_79"));
 
                     // Get a list of USER nodes.
                     ConfigNode[] userNodes = draftedUsers.GetNodes("USER");
@@ -411,7 +412,7 @@ namespace DraftTwitchViewers
                         else
                         {
                             // Log a warning that this node is corrupt and is being removed.
-                            Logger.DebugWarning("Corrupt USER node. Removing.");
+                            Logger.DebugWarning(Localizer.Format("#LOC_DTW_80"));
                             // Remove the corrupt node.
                             draftedUsers.RemoveNode(c);
                             // Set doSave to true so the corrupt nodes remain gone.
@@ -428,7 +429,7 @@ namespace DraftTwitchViewers
                 if (doSave)
                 {
                     // Save the settings file so they remain gone.
-                    localSettings.Save(saveLocation + "DTVLocalSettings.cfg");
+                    localSettings.Save(saveLocation + "DTVLocalSettings.cfg"); // NO_LOCALIZATION
                 }
             }
         }
@@ -439,7 +440,7 @@ namespace DraftTwitchViewers
 
         static string RealUserName(string realUsername)
         {
-            return realUsername + (Instance.addKerman ? " Kerman" : "");
+            return realUsername + (Instance.addKerman ? Localizer.Format("#LOC_DTW_81") : "");
         }
         static string UppercaseFirst(string s)
         {
@@ -462,7 +463,7 @@ namespace DraftTwitchViewers
         /// <param name="job">The job for the Kerbal. Optional and defaults to "Any" and is not needed if forDrawing is true.</param>
         /// <returns>The IEnumerator (used for making the draft asynchronously).</returns>
         //public static IEnumerator DraftKerbal(Action<Dictionary<string, string>> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")
-        public static IEnumerator DraftKerbal(Action<Draftee> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")
+        public static IEnumerator DraftKerbal(Action<Draftee> success, Action<string> failure, bool forDrawing, bool suppressSave, string job = "Any")  // NO_LOCALIZATION
         {
 #if true
             if (pausedForFailure)
@@ -471,7 +472,7 @@ namespace DraftTwitchViewers
             if (string.IsNullOrEmpty(Instance.StreamerAccessToken))
             {
                 // Invoke failure.
-                failure.Invoke("Please Authenticate with Twitch!");
+                failure.Invoke(Localizer.Format("#LOC_DTW_82"));
             }
             // Else, continue.
             else
@@ -582,7 +583,7 @@ namespace DraftTwitchViewers
                                 if (usersInChat.Count == 0)
                                 {
                                     // Invoke the failure Action, allowing the caller to handle this error.
-                                    failure.Invoke("Can't draw! No more valid users.\nEmpty the drafted user list to draft unused viewers.");
+                                    failure.Invoke(Localizer.Format("#LOC_DTW_83"));
                                 }
                                 else
                                 {
@@ -625,7 +626,7 @@ namespace DraftTwitchViewers
                                                 Instance.SaveDrawn();
                                             }
 
-                                            Draftee winner = new Draftee(realUsername, "winner");
+                                            Draftee winner = new Draftee(realUsername, Localizer.Format("#LOC_DTW_84"));
                                             //Dictionary<string, string> winner = new Dictionary<string, string>();
                                             //winner.Add("winner", realUsername);
 
@@ -650,10 +651,10 @@ namespace DraftTwitchViewers
                                 string realJob = job;
 
                                 // Randomize the job if none was specified.
-                                if (realJob == "Any")
+                                if (realJob == Localizer.Format("#LOC_DTW_60"))
                                 {
                                     int randomJob = UnityEngine.Random.Range(0, 3);
-                                    realJob = (randomJob == 0 ? "Pilot" : (randomJob == 1 ? "Engineer" : "Scientist"));
+                                    realJob = (randomJob == 0 ? Localizer.Format("#LOC_DTW_27") : (randomJob == 1 ? Localizer.Format("#LOC_DTW_29") : Localizer.Format("#LOC_DTW_31")));
                                 }
 
                                 // Perform the search loop at least once, and repeat until success or failure.
@@ -704,13 +705,13 @@ namespace DraftTwitchViewers
                                 else if (failedToFindOne)
                                 {
                                     // Invoke the failure Action, allowing the caller to handle this error.
-                                    failure.Invoke("Can't draft! No more valid users.");
+                                    failure.Invoke(Localizer.Format("#LOC_DTW_85"));
                                 }
                                 // Else, if the search was attempted too many times,
                                 else if (searchAttempts >= 25)
                                 {
                                     // Invoke the failure Action, allowing the caller to handle this error.
-                                    failure.Invoke("Can't draft! Too many attempts.");
+                                    failure.Invoke(Localizer.Format("#LOC_DTW_86"));
                                 }
                             }
 
@@ -745,7 +746,7 @@ namespace DraftTwitchViewers
         public void SaveGlobalSettings()
         {
             // Load global settings.
-            ConfigNode globalSettings = ConfigNode.Load(settingsLocation + "GlobalSettings.cfg");
+            ConfigNode globalSettings = ConfigNode.Load(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             // If the file exists,
             if (globalSettings != null)
             {
@@ -789,13 +790,13 @@ namespace DraftTwitchViewers
                 }
 
                 // Save the file.
-                globalSettings.Save(settingsLocation + "GlobalSettings.cfg");
+                globalSettings.Save(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             }
             // If the file doesn't exist,
             else
             {
                 // Log a warning that it wasn't found.
-                Logger.DebugWarning("(During save) GlobalSettings.cfg wasn't found. Generating to save global settings.");
+                Logger.DebugWarning(Localizer.Format("#LOC_DTW_87"));
 
                 // Create a new root node.
                 ConfigNode root = new ConfigNode();
@@ -819,7 +820,7 @@ namespace DraftTwitchViewers
                 }
 
                 // Save the file.
-                root.Save(settingsLocation + "GlobalSettings.cfg");
+                root.Save(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             }
         }
 
@@ -829,7 +830,7 @@ namespace DraftTwitchViewers
         public void SaveDrawn()
         {
             // Load global settings.
-            ConfigNode globalSettings = ConfigNode.Load(settingsLocation + "GlobalSettings.cfg");
+            ConfigNode globalSettings = ConfigNode.Load(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             // If the file exists,
             if (globalSettings != null)
             {
@@ -855,13 +856,13 @@ namespace DraftTwitchViewers
                 }
 
                 // Save the file.
-                globalSettings.Save(settingsLocation + "GlobalSettings.cfg");
+                globalSettings.Save(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             }
             // If the file doesn't exist,
             else
             {
                 // Log a warning that it wasn't found.
-                Logger.DebugWarning("(During save) GlobalSettings.cfg wasn't found. Generating to save drawn users.");
+                Logger.DebugWarning(Localizer.Format("#LOC_DTW_88"));
 
                 // Create a new root node.
                 ConfigNode root = new ConfigNode();
@@ -877,7 +878,7 @@ namespace DraftTwitchViewers
                 }
 
                 // Save the file.
-                root.Save(settingsLocation + "GlobalSettings.cfg");
+                root.Save(settingsLocation + Localizer.Format("#LOC_DTW_70"));
             }
         }
 
@@ -891,7 +892,7 @@ namespace DraftTwitchViewers
             string newName = kerbalName;
 
             // If " Kerman" is in the name,
-            if (newName.Contains(" Kerman"))
+            if (newName.Contains(Localizer.Format("#LOC_DTW_81")))
             {
                 // Remove it!
                 newName = newName.Split(' ')[0];
@@ -919,10 +920,10 @@ namespace DraftTwitchViewers
             return toRet;
         }
 
-#endregion
+        #endregion
 
         #region Regexes
-
+        #region NO_LOCALIZATION
         /// <summary>
         /// A list of regex strings.
         /// </summary>
@@ -996,7 +997,7 @@ namespace DraftTwitchViewers
             "wh(?:o|0)r(?:e|3)",
             "w(?:t|7)f"
         };
-
+        #endregion
         /// <summary>
         /// A list of regexes which will be used to test drafted names.
         /// </summary>

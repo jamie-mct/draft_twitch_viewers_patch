@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using KSP.Localization;
+using System.Collections;
 using UnityEngine;
 
 namespace DraftTwitchViewers
@@ -16,9 +17,9 @@ namespace DraftTwitchViewers
         {
             Hashtable table = ar as Hashtable;
 
-            try { this.ErrorText = (string)table["ErrorText"]; } catch { }
-            try { this.Message = (string)table["Message"]; } catch { }
-            try { this.Status = (int)table["Status"]; } catch { }
+            try { this.ErrorText = (string)table[Localizer.Format("#LOC_DTW_51")]; } catch { }
+            try { this.Message = (string)table[Localizer.Format("#LOC_DTW_52")]; } catch { }
+            try { this.Status = (int)table[Localizer.Format("#LOC_DTW_53")]; } catch { }
 
         }
     }

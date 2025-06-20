@@ -1,4 +1,5 @@
-﻿using System;
+using KSP.Localization;
+using System;
 using System.Collections;
 using System.Diagnostics;
 
@@ -18,7 +19,7 @@ namespace DraftTwitchViewers
 
         public static LEVEL level = LEVEL.INFO;
 
-        private static readonly String PREFIX = "DraftTwitchViewers (DTV)" + ": ";
+        private static readonly String PREFIX = Localizer.Format("#LOC_DTW_55") + ": ";
 
         public static LEVEL GetLevel()
         {

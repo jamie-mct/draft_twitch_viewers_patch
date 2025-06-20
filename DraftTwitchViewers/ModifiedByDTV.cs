@@ -1,4 +1,5 @@
-﻿using Contracts;
+using KSP.Localization;
+using Contracts;
 
 namespace DraftTwitchViewers
 {
@@ -23,7 +24,7 @@ namespace DraftTwitchViewers
         protected override string GetTitle()
         {
             // Return text indicating the parent contract has been modified by Draft Twitch Viewers.
-            return "Modified by DTV";
+            return Localizer.Format("#LOC_DTW_56");
         }
     }
 }

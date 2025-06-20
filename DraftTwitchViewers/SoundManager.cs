@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using KSP.Localization;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DraftTwitchViewers
@@ -49,7 +50,7 @@ namespace DraftTwitchViewers
                 instance = new SoundManager();
                 cameraFollower = new GameObject();
                 cameraFollower.AddComponent<DTVCamFollower>();
-                Logger.DebugLog("Sound Manager STARTED.");
+                Logger.DebugLog(Localizer.Format("#LOC_DTW_89"));
             }
         }
 
@@ -73,11 +74,11 @@ namespace DraftTwitchViewers
                 if (GameDatabase.Instance.ExistsAudioClip(filePath))
                 {
                     instance.Sounds.Add(soundName, GameDatabase.Instance.GetAudioClip(filePath));
-                    Logger.DebugLog("Loaded: " + soundName);
+                    Logger.DebugLog(Localizer.Format("#LOC_DTW_90") + soundName);
                 }
                 else
                 {
-                    Logger.DebugError("ERROR: Sound \"" + soundName + "\" not found in the database!");
+                    Logger.DebugError(Localizer.Format("#LOC_DTW_91") + soundName + Localizer.Format("#LOC_DTW_92"));
                 }
             }
             else
@@ -100,7 +101,7 @@ namespace DraftTwitchViewers
             }
             catch
             {
-                Logger.DebugError("ERROR: AudioClip \"" + soundName + "\" not found! Ensure it is being properly loaded.");
+                Logger.DebugError(Localizer.Format("#LOC_DTW_93") + soundName + Localizer.Format("#LOC_DTW_94"));
                 return null;
             }
         }

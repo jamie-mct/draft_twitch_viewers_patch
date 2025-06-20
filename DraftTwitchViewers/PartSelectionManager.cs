@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using KSP.Localization;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DraftTwitchViewers
@@ -90,10 +91,12 @@ namespace DraftTwitchViewers
         public void GenerateSelection(ProtoCrewMember member)
         {
             // Show upper selection message.
-            ScreenMessages.PostScreenMessage("<color=" + TwitchPurple.Hex + ">Select a pod for " + member.name + " (" + member.experienceTrait.Title + ").</color>", upper);
+            ScreenMessages.PostScreenMessage("<color=" + TwitchPurple.Hex + ">" + // NO_LOCALIZATION
+                Localizer.Format("#LOC_DTW_57") + member.name + 
+                " (" + member.experienceTrait.Title + ").</color>", upper); // NO_LOCALIZATION
 
             // Lock the the inputs to prevent launch and other shenanigans.
-            InputLockManager.SetControlLock(ControlTypes.ALLBUTCAMERAS, "DTVAddCrew");
+            InputLockManager.SetControlLock(ControlTypes.ALLBUTCAMERAS, "DTVAddCrew"); // NO_LOCALIZATION
 
             // Create the Selector list.
             selectors = new List<PartSelector>();
@@ -120,7 +123,9 @@ namespace DraftTwitchViewers
             if (availableSeats.Count == 0)
             {
                 // Post to the screen and leave it.
-                ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">No available seating.</color>", 3f, ScreenMessageStyle.LOWER_CENTER);
+                ScreenMessages.PostScreenMessage("<color=" + XKCDColors.HexFormat.KSPNotSoGoodOrange + ">" + // NO_LOCALIZATION
+                    Localizer.Format("#LOC_DTW_58") + 
+                    "</color>", 3f, ScreenMessageStyle.LOWER_CENTER); // NO_LOCALIZATION
 
                 // Clean up the manager
                 CleanUp();
@@ -165,7 +170,7 @@ namespace DraftTwitchViewers
             GameEvents.onCrewTransferred.Fire(new GameEvents.HostedFromToAction<ProtoCrewMember, Part>(toAdd, p, p));
 
             // Post to the screen and leave it.
-            ScreenMessages.PostScreenMessage(toAdd.name + " added to " + p.partInfo.title + ".", 3f, ScreenMessageStyle.LOWER_CENTER);
+            ScreenMessages.PostScreenMessage(toAdd.name + Localizer.Format("#LOC_DTW_59") + p.partInfo.title + ".", 3f, ScreenMessageStyle.LOWER_CENTER);
 
             // Clean up the manager
             CleanUp();
@@ -193,7 +198,7 @@ namespace DraftTwitchViewers
             ScreenMessages.RemoveMessage(upper);
 
             // Unlock controls.
-            InputLockManager.RemoveControlLock("DTVAddCrew");
+            InputLockManager.RemoveControlLock("DTVAddCrew"); // NO_LOCALIZATION
         }
 
         #endregion
@@ -219,7 +224,7 @@ namespace DraftTwitchViewers
         /// </summary>
         public static string Hex
         {
-            get { return "#6c2498"; }
+            get { return "#6c2498"; } // NO_LOCALIZATION
         }
     }
 
