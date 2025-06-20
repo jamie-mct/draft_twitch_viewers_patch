@@ -1,6 +1,6 @@
 {
   "NAME": "DraftTwitchViewers",
-  "URL": "http://ksp.spacetux.net/avc/DraftTwitchViewers",
+  "URL": "https://raw.githubusercontent.com/linuxgurugamer/DraftTwitchViewers/refs/heads/master/DraftTwitchViewers.version",
   "DOWNLOAD": "https://github.com/linuxgurugamer/DraftTwitchViewers/releases",
   "GITHUB": {
     "USERNAME": "linuxgurugamer",
@@ -10,7 +10,7 @@
     "MAJOR": 2,
     "MINOR": 7,
     "PATCH": 3,
-    "BUILD": 0
+    "BUILD": 1
   },
   "KSP_VERSION": {
     "MAJOR": 1,

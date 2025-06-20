@@ -1,5 +1,8 @@
 ChangeLog
 
+2.7.3.1
+	Updated version file to use github for new version info
+
 2.7.3
 	Localized all displayable strings in the mod
 
