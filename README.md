@@ -1,32 +1,26 @@
-﻿Draft Twitch Viewers
+﻿# Draft Twitch Viewers — unofficial underscore-safe / uncensored build
 
-This software is provided "as-is" with no warranties.
+This is an **unofficial modified build** of **Draft Twitch Viewers** for Kerbal Space Program.
 
-Presented under the GPL v3 license.
+This repository is based on the maintained fork by **LinuxGuruGamer**, which itself continues the original work by **Nifty255**.
 
-Creation and/or publication of media (images, videos, etc.) while using this software is authorized.
+I am not the original author or maintainer. This repository exists to provide a small, specific patch for a streamer/use case involving Twitch usernames and Kerbal names.
 
-Created by: Nifty255
+This is not an official release of Draft Twitch Viewers.
 
-Copyright 2015-2016 All rights reserved.
+This build is provided as-is, for a specific patched use case. Please do not ask the upstream maintainers to support bugs introduced by this modified build unless the same issue can be reproduced on the unmodified upstream version.
 
+Before using this build on an important save, back up your save and test it in a disposable save first.
 
-This mod is in RELEASE. However, bugs can still happen. If you have a bug, or a suggestion, please leave it in a mature manner.
+This project remains licensed under the GNU General Public License v3.0, the same licence as the upstream project.
 
+## Upstream projects
 
-FEATURES:
+- Original author: **Nifty255**
+- Maintained fork: **LinuxGuruGamer**
+- Upstream repository: <https://github.com/linuxgurugamer/DraftTwitchViewers>
 
-Draft Twitch Viewers (DTV) uses web requests to connect to Twitch, and can pick a random user from any channel, and create a Kerbal in-game with that viewer's name.
+The original upstream README is preserved in:
 
-- Easy to use interface.
-- Draft from any channel, specified in the GUI. Or launch a viewer drawing without adding the winner to the game!
-- While getting the channel viewer list, DTV can remove bots (specified by the player/streamer) and viewers with distasteful names.
-- Upon attempted draft, an alert is displayed in-game indicating success or failure.
-- Customize the draft success message and the drawing success message.
-- Fully compatible with both Crew Manifest and Ship Manifest.
-- Players can add the viewer directly to the current vessel.
-- Rescue your viewers or take them on tours with DTV modified Career Mode Contracts!
-
-TODO
-	After 5 failures, maybe automatically clear the list and try again???
-	need to clear drafted list and try again
+```text
+README-UPSTREAM.md
