@@ -1,4 +1,4 @@
-﻿# Draft Twitch Viewers — unofficial underscore-safe / uncensored build
+﻿# Draft Twitch Viewers — unofficial underscore-safee patch
 
 This is an **unofficial modified build** of **Draft Twitch Viewers** for Kerbal Space Program.
 
