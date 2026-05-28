@@ -549,32 +549,32 @@ namespace DraftTwitchViewers
                                     }
                                 }
 
-                                // Create a new list which will be used to remove from the user list.
-                                List<string> toRemove = new List<string>();
-
-                                // Iterate through the regexes.
-                                if (Instance.regexes != null)
-                                {
-                                    foreach (Regex r in Instance.regexes)
-                                    {
-                                        // Iterate through each username per regex.
-                                        foreach (string u in usersInChat)
-                                        {
-                                            // If the current regex matches the current username,
-                                            if (r.IsMatch(u))
-                                            {
-                                                // Mark the name for removal by adding it to the removal list.
-                                                toRemove.Add(u);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Iterate through the removal list and remove each entry from the user list.
-                                foreach (string r in toRemove)
-                                {
-                                    usersInChat.Remove(r);
-                                }
+//                                // Create a new list which will be used to remove from the user list.
+//                                List<string> toRemove = new List<string>();
+//
+//                                // Iterate through the regexes.
+//                                if (Instance.regexes != null)
+//                                {
+//                                    foreach (Regex r in Instance.regexes)
+//                                    {
+//                                        // Iterate through each username per regex.
+//                                        foreach (string u in usersInChat)
+//                                        {
+//                                            // If the current regex matches the current username,
+//                                            if (r.IsMatch(u))
+//                                            {
+//                                                // Mark the name for removal by adding it to the removal list.
+//                                                toRemove.Add(u);
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//
+//                                // Iterate through the removal list and remove each entry from the user list.
+//                                foreach (string r in toRemove)
+//                                {
+//                                    usersInChat.Remove(r);
+//                                }
                             }
                             // If for drawing, perform drawing code.
                             if (forDrawing)
@@ -696,7 +696,8 @@ namespace DraftTwitchViewers
 
                                     //drafted.Add("name", RealUserName(realUsername));
                                     //drafted.Add("job", realJob);
-                                    Draftee drafted = new Draftee(realUsername, realJob);
+                                    string kerbalName = SanitiseKerbalName(realUsername + (Instance.addKerman ? " Kerman" : ""));
+                                    Draftee drafted = new Draftee(kerbalName, realJob);
 
                                     // Invoke the success Action, allowing the caller to continue.
                                     success.Invoke(drafted);
@@ -908,6 +909,30 @@ namespace DraftTwitchViewers
         #endregion
 
 #region Misc Functions
+
+        /// <summary>
+        /// Converts a twitch chatter request into a list of users.
+        /// </summary>
+        /// <param name="name">The name of the user.</param>
+        /// <returns>The sanitised version of the username.</returns>
+        static string SanitiseKerbalName(string name)
+        {
+            if (name == null)
+            {
+                return "Viewer";
+            }
+
+            name = name.Trim().Trim('_');
+
+            if (string.IsNullOrEmpty(name))
+            {
+                return "Viewer";
+            }
+
+            return name;
+        }
+
+
 
         string[] ParseIntoNameArray(PaginatedArray<Chatter> chatters)
         {
