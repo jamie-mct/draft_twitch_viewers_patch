@@ -4,7 +4,7 @@ This is an **unofficial modified build** of **Draft Twitch Viewers** for Kerbal 
 
 This repository is based on the maintained fork by **LinuxGuruGamer**, which itself continues the original work by **Nifty255**.
 
-I am not the original author or maintainer. This repository exists to provide a small, specific patch for a streamer/use case involving Twitch usernames and Kerbal names.
+I am not the original author or maintainer. This repository exists to provide a small, specific patch for a bug wherein usernames with underscores at the beginning or end cause the game to crash and/or corrupt the save.
 
 This is not an official release of Draft Twitch Viewers.
 
